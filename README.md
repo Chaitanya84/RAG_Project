@@ -32,6 +32,13 @@ pip install -r requirements.txt
 
 This will install all the necessary packages listed in the `requirements.txt` file.
 
+**Note:** If your project uses `spaCy`, you may need to download specific language models separately. For example, to download the `en_core_web_sm` model, run the following command:
+
+```bash
+python -m spacy download en_core_web_sm
+```
+
+This step is necessary because `spaCy` language models are not included in the `requirements.txt` file by default. They are large files and are managed separately to keep the dependency list lightweight.
 
 ### Deactivating the Virtual Environment
 

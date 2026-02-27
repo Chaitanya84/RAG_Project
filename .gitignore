@@ -1,1 +1,35 @@
-venv
+# Python venvs
+venv/
+.env/
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# VS Code
+.vscode/
+
+# Streamlit
+.streamlit/
+
+# Data & generated artifacts from RAG_Streamlit_App
+RAG_Streamlit_App/data/
+RAG_Streamlit_App/MahaBharata.pt
+
+# Hugging Face / SentenceTransformers cache (if inside repo by mistake)
+cache/
+models/
+*.pt
+*.bin
+
+# OAuth / credentials backups
+RAG_Streamlit_App/client_secret_*.json:Zone.Identifier
+RAG_Streamlit_App/client_secret.json
+
+# OS files
+.DS_Store
+Thumbs.db
