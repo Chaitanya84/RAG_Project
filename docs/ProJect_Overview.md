@@ -405,8 +405,10 @@ dot -Tpng flow.dot -o flow.png
 
 ---
 
-This document should give new contributors (or your future self) a clear map of:
+This document should give new contributors a clear map of:
 
 - How to set up and run the project.
 - What each component does.
 - How data and control flow across modules.
+
+Entire project can be found at [RAG Project](https://github.com/Chaitanya84/RAG_Project).
