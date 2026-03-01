@@ -19,4 +19,5 @@ accelerate
 bitsandbytes
 jupyter
 wheel
+openai>=1.0
 # flash-attn

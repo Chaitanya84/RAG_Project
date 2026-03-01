@@ -1,0 +1,107 @@
+digraph RAG_Mahabharata {
+    // Vertical layout for A4
+    rankdir=TB;
+    node [shape=box, style=rounded, fontsize=10];
+
+    // -------------------------
+    // 1) Streamlit App subsystem
+    // -------------------------
+    subgraph cluster_streamlit {
+        label = "Streamlit App";
+        style = "rounded";
+        fontsize = 12;
+
+        login    [label="User Login\n(app.py)"];
+        mainPage [label="Upload & Preprocess\n(pages/mainPage.py)"];
+        chatPage [label="RAG Chat UI\n(pages/chatPage.py)"];
+
+        login -> mainPage [label="user authenticated", fontsize=8];
+        login -> chatPage [label="user authenticated", fontsize=8];
+    }
+
+    // ---------------------------------------
+    // 2) Preprocessing Pipeline subsystem
+    // ---------------------------------------
+    subgraph cluster_pipeline {
+        label = "Preprocessing Pipeline\n(embedandchunk.py)";
+        style = "rounded";
+        fontsize = 12;
+
+        readPDF    [label="Read PDF\nopen_and_read_pdf()"];
+        sentSplit  [label="Sentence Segmentation\nadd_sentences_with_spacy()"];
+        chunkBuild [label="Build Chunks\nbuild_sentence_chunks()"];
+        embedChunks[label="Embed Chunks\nfilter_and_embed_chunks()"];
+        savePages  [label="Save Pages CSV\nMahabharata_pages.csv"];
+        saveChunks [label="Save Chunks CSV\nMahabharata_chunks.csv"];
+        saveEmb    [label="Save Embeddings\nMahaBharata_embeddings.pt"];
+
+        // Vertical chain within pipeline
+        readPDF    -> sentSplit;
+        sentSplit  -> chunkBuild;
+        chunkBuild -> embedChunks;
+
+        // Outputs
+        sentSplit   -> savePages;
+        embedChunks -> saveChunks;
+        embedChunks -> saveEmb;
+    }
+
+    // -----------------------------------
+    // 3) RAG Answering subsystem
+    // -----------------------------------
+    subgraph cluster_rag {
+        label = "RAG Answering\n(AnswerAll.py)";
+        style = "rounded";
+        fontsize = 12;
+
+        loadMeta       [label="Load Chunks & Embeddings\nload_metadata_and_tensor()"];
+        loadEmbedModel [label="Load Embedding Model\nSentenceTransformer"];
+        retrieve       [label="Retrieve Top-k Chunks\nretrieve_relevant_resources()"];
+        buildPrompt    [label="Build RAG Prompt\nprompt_formatter()"];
+        openAI         [label="OpenAI Chat Completion\nOPENAI_MODEL"];
+        answer         [label="Final Answer\nanswer_with_rag / _cached"];
+
+        // Vertical chain within RAG
+        loadEmbedModel -> retrieve;
+        loadMeta       -> retrieve;
+        retrieve       -> buildPrompt;
+        buildPrompt    -> openAI;
+        openAI         -> answer;
+    }
+
+    // -------------------------
+    // Data nodes (shared)
+    // -------------------------
+    pdf      [label="Mahabharata.pdf\n(data/Mahabharata.pdf)", shape=folder, fontsize=10];
+    pagesCSV [label="Pages CSV\nMahabharata_pages.csv", shape=folder, fontsize=10];
+    chunksCSV[label="Chunks CSV\nMahabharata_chunks.csv", shape=folder, fontsize=10];
+    embPT    [label="Embeddings\nMahaBharata_embeddings.pt", shape=folder, fontsize=10];
+
+    // -------------------------
+    // Cross-subsystem edges
+    // -------------------------
+
+    // Preprocessing from Streamlit
+    mainPage -> readPDF [label="process_pdf_for_rag()\n(if outputs missing)", fontsize=8];
+    pdf      -> readPDF [fontsize=8];
+
+    // Pipeline outputs to data nodes
+    savePages  -> pagesCSV;
+    saveChunks -> chunksCSV;
+    saveEmb    -> embPT;
+
+    // Early-exit checks (dashed)
+    mainPage -> pagesCSV [label="check exists", style=dashed, fontsize=8];
+    mainPage -> chunksCSV[label="check exists", style=dashed, fontsize=8];
+    mainPage -> embPT    [label="check exists", style=dashed, fontsize=8];
+
+    // RAG uses metadata & embeddings
+    chunksCSV -> loadMeta;
+    embPT     -> loadMeta;
+
+    // Chat UI consumes final answer
+    answer -> chatPage [label="display answer", fontsize=8];
+
+    // Optional: indicate logical flow between pages
+    mainPage -> chatPage [label="after preprocess", style=dotted, fontsize=8];
+}

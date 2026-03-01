@@ -33,3 +33,6 @@ RAG_Streamlit_App/client_secret.json
 # OS files
 .DS_Store
 Thumbs.db
+
+
+RAG_Streamlit_App/=1.0

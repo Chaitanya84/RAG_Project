@@ -6,7 +6,6 @@ sys.path.append("/home/prichai/AI_ML/RAG_Project/RAG_Streamlit_App")
 
 from AnswerAll import (
     load_rag_resources,
-    load_llm_resources,
     answer_with_rag_cached,
 )
 
@@ -26,12 +25,13 @@ st.write(f"Logged in as: {st.session_state.user_email}")
 def get_rag_resources():
     return load_rag_resources()
 
+# Dummy LLM resources – kept only for signature compatibility
 @st.cache_resource
 def get_llm_resources():
-    return load_llm_resources()
+    return None, None
 
 embedding_model, pages_and_chunks, embeddings = get_rag_resources()
-tokenizer, llm_model = get_llm_resources()
+tokenizer, llm_model = get_llm_resources()  # both None, but required by signature
 
 # Initialize chat history
 if "chat_history" not in st.session_state:
@@ -48,14 +48,13 @@ for msg in st.session_state.chat_history:
 user_input = st.text_input("Ask a question about the Mahabharata:", "")
 
 if st.button("Send") and user_input.strip():
-    st.session_state.chat_history.append(
-        {"role": "user", "content": user_input.strip()}
-    )
+    question = user_input.strip()
+    st.session_state.chat_history.append({"role": "user", "content": question})
 
     with st.spinner("Thinking..."):
         try:
             answer = answer_with_rag_cached(
-                user_query=user_input.strip(),
+                user_query=question,
                 embedding_model=embedding_model,
                 pages_and_chunks=pages_and_chunks,
                 embeddings=embeddings,
@@ -65,10 +64,7 @@ if st.button("Send") and user_input.strip():
         except Exception as e:
             answer = f"Error while generating answer: {e}"
 
-    st.session_state.chat_history.append(
-        {"role": "assistant", "content": answer}
-    )
-
+    st.session_state.chat_history.append({"role": "assistant", "content": answer})
     st.rerun()
 
 if st.button("Clear chat"):
