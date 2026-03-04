@@ -1,0 +1,25 @@
+# Environment & secrets
+.env
+client_secret.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Data files (too large for git)
+data/*.pdf
+data/*.csv
+data/*.pkl
+data/machine-learning-books-master/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

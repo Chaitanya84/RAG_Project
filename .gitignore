@@ -3,6 +3,11 @@ venv/
 .env/
 .venv/
 
+# Environment variables (secrets)
+*.env
+!.env.example
+RAG_Streamlit_App/.env
+
 # Python cache
 __pycache__/
 *.py[cod]
@@ -18,7 +23,6 @@ __pycache__/
 
 # Data & generated artifacts from RAG_Streamlit_App
 RAG_Streamlit_App/data/
-RAG_Streamlit_App/MahaBharata.pt
 
 # Hugging Face / SentenceTransformers cache (if inside repo by mistake)
 cache/
@@ -33,8 +37,3 @@ RAG_Streamlit_App/client_secret.json
 # OS files
 .DS_Store
 Thumbs.db
-
-
-RAG_Streamlit_App/=1.0
-RAG_Project/RAG_Streamlit_App/data/Mahabharata.pdf
-RAG_Project/docs/packagees.micrsoft*

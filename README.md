@@ -1,51 +1,104 @@
-### Setting up a Virtual Environment
+# RAG Streamlit App
 
-To create and activate a virtual environment for this project, follow these steps:
+A Retrieval-Augmented Generation (RAG) application built with Streamlit, OpenAI APIs, and Google OAuth.
 
-1. **Create the virtual environment**:
-    ```bash
-    python3 -m venv venv
-    ```
+## Project Structure
 
-2. **Activate the virtual environment**:
-    - On Linux/macOS:
-      ```bash
-      source venv/bin/activate
-      ```
-    - On Windows:
-      ```bash
-      .\venv\Scripts\activate
-      ```
+```
+RAG_Project/
+├── requirements.txt          # Python dependencies
+├── README.md
+├── RAG_Streamlit_App/
+│   ├── .env                  # Environment variables (not committed)
+│   ├── .env.example          # Template for .env (safe to commit)
+│   ├── config.py             # Centralized configuration
+│   ├── app.py                # Streamlit entry point (Google OAuth login)
+│   ├── AnswerAll.py          # RAG retrieval & answering logic
+│   ├── embedandchunk.py      # PDF → sentence chunks → embeddings pipeline
+│   ├── client_secret.json    # Google OAuth client secret (not committed)
+│   ├── data/                 # Generated CSVs, embeddings, and PDFs (not committed)
+│   └── pages/
+│       ├── mainPage.py       # PDF upload & processing page
+│       └── chatPage.py       # Chat interface for RAG Q&A
+```
 
-3. **Install dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
+## Setup
 
-Remember to activate the virtual environment each time you work on the project.
-### Installing requirement
-To install the required dependencies for this project, ensure you are in the virtual environment and run:
+### 1. Create and activate a virtual environment
+
+```bash
+python3 -m venv venv
+source venv/bin/activate      # Linux / macOS
+# .\venv\Scripts\activate     # Windows
+```
+
+### 2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-This will install all the necessary packages listed in the `requirements.txt` file.
+### 3. Configure environment variables
 
-**Note:** If your project uses `spaCy`, you may need to download specific language models separately. For example, to download the `en_core_web_sm` model, run the following command:
+**Option A – Set in `.bashrc` (recommended, keeps secrets out of files):**
+
+```bash
+echo 'export OPENAI_API_KEY="sk-proj-YOUR_KEY_HERE"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+Then copy the template to create your `.env` (non-secret settings only):
+
+```bash
+cd RAG_Streamlit_App
+cp .env.example .env
+```
+
+**Option B – Set directly in `.env`:**
+
+```bash
+cd RAG_Streamlit_App
+cp .env.example .env
+# Edit .env and uncomment/set OPENAI_API_KEY
+```
+
+Required variables in `RAG_Streamlit_App/.env`:
+
+| Variable | Description | Default |
+|---|---|---|
+| `OPENAI_API_KEY` | Your OpenAI API key | *(required)* |
+| `OPENAI_EMBEDDING_MODEL` | Embedding model name | `text-embedding-3-small` |
+| `OPENAI_CHAT_MODEL` | Chat completion model | `gpt-4o-mini` |
+| `DEBUG` | Enable debug logging | `true` |
+| `OAUTHLIB_INSECURE_TRANSPORT` | Allow HTTP OAuth (local dev only) | `1` |
+
+### 4. Run the app
+
+```bash
+cd RAG_Streamlit_App
+streamlit run app.py
+```
+
+### 5. (Optional) Download spaCy model
+
+If not auto-installed via `requirements.txt`:
 
 ```bash
 python -m spacy download en_core_web_sm
 ```
 
-This step is necessary because `spaCy` language models are not included in the `requirements.txt` file by default. They are large files and are managed separately to keep the dependency list lightweight.
+> **Note:** The app will auto-download the spaCy model if it's missing on first PDF processing.
 
-### Deactivating the Virtual Environment
+## Usage
 
-To deactivate the virtual environment, simply run:
+1. **Login** – Authenticate with Google on the Welcome page.
+2. **Upload** – Go to **MainPage** and upload a PDF. The app will chunk it, embed it via OpenAI, and save the artifacts.
+3. **Chat** – Go to **ChatPage** and ask questions. The app retrieves the most relevant chunks and generates answers using OpenAI.
+
+> **Note:** The `data/` directory is gitignored. If you clone fresh, you'll need to upload and process a PDF before chatting.
+
+## Deactivating the Virtual Environment
 
 ```bash
 deactivate
 ```
-
-This will return you to the system's default Python environment.
