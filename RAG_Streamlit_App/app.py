@@ -11,10 +11,12 @@ from config import REDIRECT_URI, CLIENT_SECRET_PATH, DEBUG_MODE, logger
 if DEBUG_MODE:
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
+import json
+import urllib.parse
 import streamlit as st
-from google_auth_oauthlib.flow import Flow
+import requests as http_requests
 from google.oauth2 import id_token
-from google.auth.transport import requests
+from google.auth.transport import requests as google_requests
 
 st.set_page_config(page_title="RAG Streamlit App", layout="centered")
 
@@ -26,25 +28,48 @@ if "user_email" not in st.session_state:
 
 query_params = st.query_params
 
+# Load client secrets once
+with open(CLIENT_SECRET_PATH, "r") as _f:
+    _client_secrets = json.load(_f)["web"]
 
-def create_flow() -> Flow:
-    """
-    Create a Flow object from client_secret.json.
-    Uses the absolute path from config so it works regardless of cwd.
-    PKCE is disabled (autogenerate_code_verifier=False) because Streamlit
-    re-runs the entire script on the OAuth callback, creating a new Flow
-    that loses the original code_verifier.
-    """
-    return Flow.from_client_secrets_file(
-        CLIENT_SECRET_PATH,
-        scopes=[
-            "https://www.googleapis.com/auth/userinfo.email",
-            "https://www.googleapis.com/auth/userinfo.profile",
-            "openid",
-        ],
-        redirect_uri=REDIRECT_URI,
-        autogenerate_code_verifier=False,
-    )
+CLIENT_ID = _client_secrets["client_id"]
+CLIENT_SECRET = _client_secrets["client_secret"]
+AUTH_URI = _client_secrets["auth_uri"]
+TOKEN_URI = _client_secrets["token_uri"]
+
+SCOPES = [
+    "https://www.googleapis.com/auth/userinfo.email",
+    "https://www.googleapis.com/auth/userinfo.profile",
+    "openid",
+]
+
+
+def build_auth_url() -> str:
+    """Build Google OAuth2 authorization URL manually (no PKCE)."""
+    params = {
+        "client_id": CLIENT_ID,
+        "redirect_uri": REDIRECT_URI,
+        "response_type": "code",
+        "scope": " ".join(SCOPES),
+        "access_type": "offline",
+        "prompt": "consent",
+    }
+    return f"{AUTH_URI}?{urllib.parse.urlencode(params)}"
+
+
+def exchange_code_for_tokens(code: str) -> dict:
+    """Exchange authorization code for tokens via direct HTTP POST (no PKCE)."""
+    data = {
+        "code": code,
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "redirect_uri": REDIRECT_URI,
+        "grant_type": "authorization_code",
+    }
+    resp = http_requests.post(TOKEN_URI, data=data)
+    if resp.status_code != 200:
+        raise Exception(f"Token exchange failed: {resp.status_code} {resp.text}")
+    return resp.json()
 
 
 st.title("Welcome App")
@@ -64,18 +89,12 @@ else:
         code = query_params["code"]
 
         try:
-            flow = create_flow()
-            flow.fetch_token(code=code)
-            credentials = flow.credentials
-
-            req = requests.Request()
-            client_config = flow.client_config
-            client_id = client_config.get("client_id")
+            tokens = exchange_code_for_tokens(code)
 
             id_info = id_token.verify_oauth2_token(
-                credentials.id_token,
-                req,
-                client_id,
+                tokens["id_token"],
+                google_requests.Request(),
+                CLIENT_ID,
             )
 
             st.session_state.user_logged_in = True
@@ -90,12 +109,8 @@ else:
             st.error(f"Login failed: {e}")
             st.query_params.clear()
     else:
-        # Google OAuth Login — only show button when not handling callback
-        flow = create_flow()
-        auth_url, _ = flow.authorization_url(
-            prompt="consent",
-            access_type="offline",
-        )
+        # Google OAuth Login
+        auth_url = build_auth_url()
 
         st.markdown(
             f"""
