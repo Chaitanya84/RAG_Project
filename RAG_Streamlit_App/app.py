@@ -31,6 +31,9 @@ def create_flow() -> Flow:
     """
     Create a Flow object from client_secret.json.
     Uses the absolute path from config so it works regardless of cwd.
+    PKCE is disabled (autogenerate_code_verifier=False) because Streamlit
+    re-runs the entire script on the OAuth callback, creating a new Flow
+    that loses the original code_verifier.
     """
     return Flow.from_client_secrets_file(
         CLIENT_SECRET_PATH,
@@ -40,6 +43,7 @@ def create_flow() -> Flow:
             "openid",
         ],
         redirect_uri=REDIRECT_URI,
+        autogenerate_code_verifier=False,
     )
 
 
@@ -91,7 +95,6 @@ else:
         auth_url, _ = flow.authorization_url(
             prompt="consent",
             access_type="offline",
-            code_verifier=None,
         )
 
         st.markdown(
