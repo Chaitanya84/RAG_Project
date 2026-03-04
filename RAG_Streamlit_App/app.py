@@ -4,12 +4,17 @@ import sys
 # Ensure the app root is on sys.path so config can be imported from any cwd
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Load config FIRST so OAUTHLIB_INSECURE_TRANSPORT is set before OAuth imports
+from config import REDIRECT_URI, CLIENT_SECRET_PATH, DEBUG_MODE, logger
+
+# Must be set before importing google_auth_oauthlib
+if DEBUG_MODE:
+    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+
 import streamlit as st
 from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
 from google.auth.transport import requests
-
-from config import REDIRECT_URI, CLIENT_SECRET_PATH, DEBUG_MODE, logger
 
 st.set_page_config(page_title="RAG Streamlit App", layout="centered")
 
@@ -50,36 +55,9 @@ if st.session_state.user_logged_in:
 else:
     st.write("Please log in using your Google account to continue.")
 
-    # Google OAuth Login
-    flow = create_flow()
-    auth_url, _ = flow.authorization_url(prompt="consent")
-
-    st.markdown(
-        f"""
-        <a href="{auth_url}" style="text-decoration: none;">
-            <button style="
-                background-color: #4285F4;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                text-align: center;
-                text-decoration: none;
-                display: inline-block;
-                font-size: 16px;
-                border-radius: 4px;
-                cursor: pointer;
-            ">
-                Login with Google
-            </button>
-        </a>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # Handle OAuth callback via query params
+    # Handle OAuth callback via query params FIRST (before rendering login button)
     if "code" in query_params:
-        code_values = query_params["code"]
-        code = code_values[0] if isinstance(code_values, list) else code_values
+        code = query_params["code"]
 
         try:
             flow = create_flow()
@@ -99,12 +77,37 @@ else:
             st.session_state.user_logged_in = True
             st.session_state.user_email = id_info.get("email", "")
             logger.info("User logged in: %s", st.session_state.user_email)
+
+            # Clear query params and rerun
+            st.query_params.clear()
+            st.rerun()
         except Exception as e:
             logger.error("OAuth login failed: %s", e)
             st.error(f"Login failed: {e}")
+            st.query_params.clear()
+    else:
+        # Google OAuth Login — only show button when not handling callback
+        flow = create_flow()
+        auth_url, _ = flow.authorization_url(prompt="consent")
 
-        # Remove "code" from query params and re-run to avoid re-processing
-        new_qp = {k: v for k, v in query_params.items() if k != "code"}
-        st.query_params = new_qp
-
-        st.rerun()
+        st.markdown(
+            f"""
+            <a href="{auth_url}" style="text-decoration: none;">
+                <button style="
+                    background-color: #4285F4;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    text-align: center;
+                    text-decoration: none;
+                    display: inline-block;
+                    font-size: 16px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                ">
+                    Login with Google
+                </button>
+            </a>
+            """,
+            unsafe_allow_html=True,
+        )

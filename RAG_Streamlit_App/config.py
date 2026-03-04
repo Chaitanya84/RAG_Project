@@ -70,11 +70,31 @@ PAGE_NUMBER_OFFSET = 0
 # OAuth
 # ---------------------------------------------------------------------------
 DEBUG_MODE = os.getenv("DEBUG", "false").lower() == "true"
-if DEBUG_MODE:
+
+# Allow HTTP for local OAuth — check both DEBUG and the explicit env var
+if DEBUG_MODE or os.getenv("OAUTHLIB_INSECURE_TRANSPORT", "0") == "1":
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 REDIRECT_URI = os.getenv("REDIRECT_URI", "http://localhost:8501/")
 CLIENT_SECRET_PATH = os.path.join(APP_ROOT, "client_secret.json")
+
+# If client_secret.json doesn't exist on disk (e.g. on Render), create it
+# from the GOOGLE_CLIENT_SECRET_JSON environment variable.
+if not os.path.exists(CLIENT_SECRET_PATH):
+    _client_secret_json = os.getenv("GOOGLE_CLIENT_SECRET_JSON", "")
+    if _client_secret_json:
+        with open(CLIENT_SECRET_PATH, "w") as _f:
+            _f.write(_client_secret_json)
+        logger.info("Created client_secret.json from GOOGLE_CLIENT_SECRET_JSON env var.")
+    else:
+        logger.error(
+            "client_secret.json not found and GOOGLE_CLIENT_SECRET_JSON env var is not set. "
+            "OAuth login will NOT work."
+        )
+
+logger.debug("REDIRECT_URI = %s", REDIRECT_URI)
+logger.debug("CLIENT_SECRET_PATH = %s (exists: %s)", CLIENT_SECRET_PATH, os.path.exists(CLIENT_SECRET_PATH))
+logger.debug("OAUTHLIB_INSECURE_TRANSPORT = %s", os.getenv("OAUTHLIB_INSECURE_TRANSPORT", "0"))
 
 # ---------------------------------------------------------------------------
 # Query length limit (basic prompt‑injection mitigation)
