@@ -88,7 +88,11 @@ else:
     else:
         # Google OAuth Login — only show button when not handling callback
         flow = create_flow()
-        auth_url, _ = flow.authorization_url(prompt="consent")
+        auth_url, _ = flow.authorization_url(
+            prompt="consent",
+            access_type="offline",
+            code_verifier=None,
+        )
 
         st.markdown(
             f"""
