@@ -283,6 +283,162 @@ def answer_with_rag_cached(
 
 
 # -----------------------
+# Quiz Generation (RAG-based)
+# -----------------------
+def _build_quiz_prompt(
+    context_items: list[dict],
+    num_questions: int,
+    difficulty: str,
+    topic_hint: str,
+) -> str:
+    """Build a prompt that asks OpenAI to generate MCQ quiz questions from context."""
+    context_parts = []
+    for item in context_items:
+        source = item.get("source_file", "unknown")
+        page = item.get("page_number", "?")
+        chunk_text = item["sentence_chunk"]
+        context_parts.append(f"[Source: {source}, Page: {page}]\n{chunk_text}")
+    context = "\n\n".join(context_parts)
+
+    prompt = f"""You are a quiz creator that generates questions EXCLUSIVELY from the provided document passages.
+
+STRICT RULES — VIOLATION OF ANY RULE MAKES THE QUIZ INVALID:
+1. Every question MUST be directly answerable from the context passages below.
+2. Every correct answer MUST be a fact explicitly stated in the context.
+3. Every wrong option MUST be plausible but clearly contradicted by or not present in the context.
+4. Every explanation MUST quote or closely paraphrase the context and cite the source file and page number.
+5. Do NOT use any outside knowledge, general knowledge, or information not in the context.
+6. If you cannot generate {num_questions} questions from the context alone, generate as many as possible.
+7. Difficulty level: {difficulty}
+   - Easy: straightforward factual recall from the text
+   - Medium: requires understanding relationships between facts in the text
+   - Hard: requires inference or synthesis across multiple passages in the text
+8. Topic focus: {topic_hint}
+
+Return the quiz in this EXACT JSON format (no markdown, no code fences, just raw JSON array):
+[
+  {{
+    "question": "According to the document, what is ...?",
+    "options": {{
+      "A": "Option from context",
+      "B": "Option from context",
+      "C": "Option from context",
+      "D": "Option from context"
+    }},
+    "correct": "B",
+    "explanation": "The text states that '...' (Source: filename.pdf, Page: 5)"
+  }}
+]
+
+CONTEXT PASSAGES (this is your ONLY source of information):
+{context}
+"""
+    return prompt
+
+
+@retry(
+    retry=retry_if_exception_type(_RETRYABLE_ERRORS),
+    wait=wait_exponential(multiplier=1, min=2, max=30),
+    stop=stop_after_attempt(4),
+    before_sleep=lambda rs: logger.warning("Retrying OpenAI quiz call (attempt %d)…", rs.attempt_number),
+)
+def _call_quiz_api(prompt: str) -> str:
+    """Send a quiz generation prompt to OpenAI and return the raw response."""
+    client = get_openai_client()
+    response = client.chat.completions.create(
+        model=OPENAI_CHAT_MODEL,
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "You generate multiple-choice quiz questions using ONLY the document "
+                    "passages provided by the user. You NEVER use outside knowledge. "
+                    "Every question, answer option, and explanation must come directly "
+                    "from the provided text. If a fact is not in the passages, do not "
+                    "reference it. Always respond with valid JSON only — no markdown "
+                    "fences, no extra text."
+                ),
+            },
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0.3,
+        max_tokens=2048,
+    )
+    return response.choices[0].message.content.strip()
+
+
+def generate_quiz(
+    topic: str,
+    pages_and_chunks: list[dict],
+    embeddings: np.ndarray,
+    num_questions: int = 5,
+    difficulty: str = "Medium",
+    context_override: list[dict] | None = None,
+) -> list[dict]:
+    """
+    Generate a quiz from the knowledge base.
+
+    If context_override is provided, use those chunks directly (no retrieval).
+    Otherwise, use the topic as a query to retrieve relevant chunks.
+    """
+    import json as _json
+
+    if not topic or not topic.strip():
+        raise ValueError("Please provide a topic for the quiz.")
+
+    if context_override:
+        # Use the pre-selected chunks directly — no semantic search needed
+        context_items = context_override
+    else:
+        # Fallback: retrieve chunks via semantic search
+        top_k = min(max(num_questions * 2, 5), 15)
+        scores, indices = retrieve_relevant_resources(
+            query=topic,
+            embeddings=embeddings,
+            top_k=top_k,
+        )
+        sorted_pairs = sorted(zip(scores.tolist(), indices.tolist()), reverse=True)
+        context_items = [pages_and_chunks[i] for _, i in sorted_pairs]
+
+    logger.info(
+        "Quiz generation — topic: %r, difficulty: %s, num_questions: %d, context chunks: %d",
+        topic, difficulty, num_questions, len(context_items),
+    )
+
+    prompt = _build_quiz_prompt(context_items, num_questions, difficulty, topic)
+    raw = _call_quiz_api(prompt)
+
+    # Strip markdown code fences if the model wraps them anyway
+    raw = raw.strip()
+    if raw.startswith("```"):
+        raw = raw.split("\n", 1)[1] if "\n" in raw else raw[3:]
+    if raw.endswith("```"):
+        raw = raw[:-3]
+    raw = raw.strip()
+
+    try:
+        questions = _json.loads(raw)
+    except _json.JSONDecodeError as e:
+        logger.error("Failed to parse quiz JSON: %s\nRaw response:\n%s", e, raw[:500])
+        raise ValueError(
+            "The AI returned an invalid quiz format. Please try again."
+        ) from e
+
+    # Basic validation
+    validated = []
+    for q in questions:
+        if all(k in q for k in ("question", "options", "correct", "explanation")):
+            if q["correct"] in q["options"]:
+                validated.append(q)
+    
+    if not validated:
+        raise ValueError("No valid questions could be generated. Try a different topic.")
+
+    logger.info("Generated %d valid quiz questions.", len(validated))
+    return validated
+
+
+# -----------------------
 # Main execution (CLI demo)
 # -----------------------
 if __name__ == "__main__":
