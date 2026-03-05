@@ -22,7 +22,12 @@ __pycache__/
 .streamlit/
 
 # Data & generated artifacts from RAG_Streamlit_App
-RAG_Streamlit_App/data/
+RAG_Streamlit_App/data/*.pdf
+RAG_Streamlit_App/data/machine-learning-books-master/
+RAG_Streamlit_App/data/pdfs/
+# Allow .csv and .pkl knowledge base files to be committed
+!RAG_Streamlit_App/data/*.csv
+!RAG_Streamlit_App/data/*.pkl
 
 # Hugging Face / SentenceTransformers cache (if inside repo by mistake)
 cache/

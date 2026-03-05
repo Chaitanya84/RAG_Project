@@ -10,10 +10,8 @@ __pycache__/
 dist/
 build/
 
-# Data files (too large for git)
+# Data files — PDFs are too large, but CSV/PKL knowledge base files are needed on Render
 data/*.pdf
-data/*.csv
-data/*.pkl
 data/machine-learning-books-master/
 
 # OS
