@@ -20,6 +20,7 @@ __pycache__/
 
 # Streamlit
 .streamlit/
+!RAG_Streamlit_App/.streamlit/
 
 # Data & generated artifacts from RAG_Streamlit_App
 RAG_Streamlit_App/data/*.pdf

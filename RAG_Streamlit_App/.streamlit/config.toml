@@ -1,0 +1,10 @@
+[server]
+maxUploadSize = 200
+headless = true
+address = "0.0.0.0"
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+primaryColor = "#4285F4"
