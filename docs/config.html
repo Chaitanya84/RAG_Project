@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Configuration — RAG Docs</title>
+<style>
+  :root{--primary:#4285F4;--bg:#f8f9fa;--card:#fff;--text:#212529;--muted:#6c757d;--code-bg:#1e1e1e;--code-fg:#d4d4d4;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;}
+  .topbar{background:var(--primary);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  .topbar a{color:#fff;text-decoration:none;font-weight:600;} .topbar .nav a{margin-left:18px;opacity:.85;font-size:.9rem;} .topbar .nav a:hover{opacity:1;}
+  .container{max-width:860px;margin:0 auto;padding:40px 20px 60px;}
+  h1{font-size:2rem;margin-bottom:8px;} h2{font-size:1.45rem;margin:36px 0 10px;padding-bottom:6px;border-bottom:2px solid #e9ecef;} h3{font-size:1.15rem;margin:24px 0 8px;}
+  p,li{margin-bottom:10px;} ul,ol{padding-left:24px;}
+  .callout{background:#e8f0fe;border-left:4px solid var(--primary);padding:16px 20px;border-radius:0 8px 8px 0;margin:20px 0;}
+  .callout-green{background:#e6f4ea;border-left-color:#34a853;} .callout-yellow{background:#fef7e0;border-left-color:#fbbc04;}
+  code{background:#e9ecef;padding:2px 6px;border-radius:4px;font-size:.88em;}
+  pre{background:var(--code-bg);color:var(--code-fg);padding:18px;border-radius:8px;overflow-x:auto;font-size:.85rem;line-height:1.5;margin:14px 0;}
+  .kw{color:#569cd6;} .str{color:#ce9178;} .cmt{color:#6a9955;} .fn{color:#dcdcaa;} .num{color:#b5cea8;}
+  table{width:100%;border-collapse:collapse;margin:14px 0;} th,td{border:1px solid #dee2e6;padding:10px 14px;text-align:left;font-size:.92rem;} th{background:#e9ecef;}
+  .nav-bottom{display:flex;justify-content:space-between;margin-top:50px;padding-top:20px;border-top:2px solid #e9ecef;}
+  .btn{display:inline-block;background:var(--primary);color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem;} .btn:hover{background:#3367d6;}
+  .btn-outline{background:transparent;color:var(--primary);border:2px solid var(--primary);} .btn-outline:hover{background:var(--primary);color:#fff;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="index.html">📚 RAG Docs</a>
+  <div class="nav"><a href="index.html">Home</a><a href="overview.html">Overview</a><a href="setup.html">Setup</a><a href="pipeline.html">Pipeline</a><a href="retrieval.html">Retrieval</a><a href="frontend.html">Frontend</a><a href="deployment.html">Deploy</a><a href="libraries.html">Libraries</a></div>
+</div>
+<div class="container">
+
+<h1>🔧 3. Configuration — <code>config.py</code></h1>
+<p>This file is the <strong>control panel</strong> of the entire app. Every other file imports settings from here. If you need to change a path, a model name, or a default value, this is the only file you edit.</p>
+
+<h2>Why One Config File?</h2>
+<p>Without a central config, you'd have API keys and file paths scattered across 6+ files. If you change something, you'd need to find and update it everywhere. <code>config.py</code> solves this — <strong>single source of truth</strong>.</p>
+
+<h2>Section 1: App Root &amp; .env Loading</h2>
+<pre>
+<span class="cmt"># Where this file lives on disk</span>
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+
+<span class="cmt"># Read .env file from the app folder</span>
+load_dotenv(os.path.join(APP_ROOT, <span class="str">".env"</span>))
+</pre>
+<ul>
+  <li><code>APP_ROOT</code> — The absolute path to the <code>RAG_Streamlit_App/</code> folder. All other paths are built relative to this.</li>
+  <li><code>load_dotenv()</code> — Reads the <code>.env</code> file and makes its values available via <code>os.getenv()</code>. This is from the <code>python-dotenv</code> library.</li>
+</ul>
+<div class="callout">
+  <strong>💡 What is <code>__file__</code>?</strong> It's a built-in Python variable that holds the path of the current script. <code>os.path.abspath(__file__)</code> makes it an absolute path (e.g., <code>/home/user/RAG_Streamlit_App/config.py</code>), and <code>os.path.dirname()</code> strips the filename to get the directory.
+</div>
+
+<h2>Section 2: Logging</h2>
+<pre>
+LOG_LEVEL = logging.DEBUG <span class="kw">if</span> os.getenv(<span class="str">"DEBUG"</span>, <span class="str">"false"</span>).lower() == <span class="str">"true"</span> <span class="kw">else</span> logging.INFO
+
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format=<span class="str">"[%(levelname)s] %(name)s – %(message)s"</span>,
+)
+logger = logging.getLogger(<span class="str">"rag_app"</span>)
+</pre>
+<ul>
+  <li>If <code>DEBUG=true</code> in your <code>.env</code>, you get very detailed logs. Otherwise, only important messages.</li>
+  <li><code>logger</code> is used throughout all other files via <code>from config import logger</code>.</li>
+</ul>
+<div class="callout callout-green">
+  <strong>💡 What is logging?</strong> Instead of using <code>print()</code> everywhere, Python's <code>logging</code> module lets you categorize messages by severity: DEBUG (detailed), INFO (normal), WARNING, ERROR. You can turn verbosity up or down with one setting.
+</div>
+
+<h2>Section 3: OpenAI Settings</h2>
+<pre>
+OPENAI_API_KEY = os.getenv(<span class="str">"OPENAI_API_KEY"</span>, <span class="str">""</span>)
+OPENAI_EMBEDDING_MODEL = os.getenv(<span class="str">"OPENAI_EMBEDDING_MODEL"</span>, <span class="str">"text-embedding-3-small"</span>)
+OPENAI_CHAT_MODEL = os.getenv(<span class="str">"OPENAI_CHAT_MODEL"</span>, <span class="str">"gpt-4o-mini"</span>)
+</pre>
+<table>
+  <tr><th>Variable</th><th>Default</th><th>What It Does</th></tr>
+  <tr><td><code>OPENAI_API_KEY</code></td><td><em>(none — required)</em></td><td>Your secret key to access OpenAI. Without this, nothing works.</td></tr>
+  <tr><td><code>OPENAI_EMBEDDING_MODEL</code></td><td><code>text-embedding-3-small</code></td><td>The model that converts text → 1,536-dimensional vectors. Small = cheaper &amp; faster.</td></tr>
+  <tr><td><code>OPENAI_CHAT_MODEL</code></td><td><code>gpt-4o-mini</code></td><td>The model that generates answers and quizzes. Mini = cheaper, still very capable.</td></tr>
+</table>
+
+<h2>Section 4: Data Paths</h2>
+<pre>
+DATA_DIR    = os.path.join(APP_ROOT, <span class="str">"data"</span>)
+PDF_DIR     = os.path.join(DATA_DIR, <span class="str">"pdfs"</span>)
+PDF_PATH    = os.path.join(DATA_DIR, <span class="str">"Mahabharata.pdf"</span>)
+PAGES_CSV   = os.path.join(DATA_DIR, <span class="str">"Mahabharata_pages.csv"</span>)
+CHUNKS_CSV  = os.path.join(DATA_DIR, <span class="str">"Mahabharata_chunks.csv"</span>)
+EMBEDDINGS_PATH = os.path.join(DATA_DIR, <span class="str">"MahaBharata_embeddings.pkl"</span>)
+</pre>
+<p>These are <strong>default paths</strong> used as fallbacks. When users upload their own PDFs via the web UI, the app generates new paths like <code>data/uploaded_pdfs_chunks.csv</code> instead.</p>
+
+<h2>Section 5: Chunking Defaults</h2>
+<pre>
+NUM_SENTENCE_CHUNK_SIZE = <span class="num">10</span>   <span class="cmt"># Group every 10 sentences into one chunk</span>
+MIN_TOKEN_LENGTH = <span class="num">30</span>          <span class="cmt"># Skip chunks shorter than ~120 characters</span>
+PAGE_NUMBER_OFFSET = <span class="num">0</span>         <span class="cmt"># Subtract from raw page numbers (for front-matter)</span>
+</pre>
+<div class="callout callout-yellow">
+  <strong>🎯 Why 10 sentences per chunk?</strong> Too small (1–2 sentences) = not enough context for a good answer. Too large (50+ sentences) = too much noise, wastes tokens. 10 is a good balance — each chunk is roughly a paragraph.
+</div>
+
+<h2>Section 6: OAuth Settings</h2>
+<pre>
+DEBUG_MODE = os.getenv(<span class="str">"DEBUG"</span>, <span class="str">"false"</span>).lower() == <span class="str">"true"</span>
+
+<span class="kw">if</span> DEBUG_MODE:
+    os.environ[<span class="str">"OAUTHLIB_INSECURE_TRANSPORT"</span>] = <span class="str">"1"</span>
+
+REDIRECT_URI = os.getenv(<span class="str">"REDIRECT_URI"</span>, <span class="str">"http://localhost:8501/"</span>)
+CLIENT_SECRET_PATH = os.path.join(APP_ROOT, <span class="str">"client_secret.json"</span>)
+</pre>
+<ul>
+  <li><code>OAUTHLIB_INSECURE_TRANSPORT=1</code> — Allows OAuth over HTTP (not HTTPS). <strong>Only for local development!</strong> In production (Render), the connection is HTTPS so this isn't set.</li>
+  <li><code>REDIRECT_URI</code> — Where Google sends the user back after login. Locally it's <code>localhost:8501</code>; on Render it's your deployed URL.</li>
+  <li>If <code>client_secret.json</code> doesn't exist on disk (e.g., on Render), the app creates it from the <code>GOOGLE_CLIENT_SECRET_JSON</code> environment variable.</li>
+</ul>
+
+<h2>Section 7: OpenAI Client (Lazy Singleton)</h2>
+<pre>
+_openai_client: OpenAI | None = None
+
+<span class="kw">def</span> <span class="fn">get_openai_client</span>() -> OpenAI:
+    <span class="kw">global</span> _openai_client
+    <span class="kw">if</span> _openai_client <span class="kw">is</span> None:
+        _openai_client = OpenAI(api_key=OPENAI_API_KEY)
+    <span class="kw">return</span> _openai_client
+</pre>
+<div class="callout">
+  <strong>💡 What is a Singleton?</strong> A design pattern where only ONE instance of something is created. Here, we create the OpenAI client the first time it's needed, then reuse it forever. This avoids creating a new connection for every API call.
+</div>
+<p><strong>Lazy</strong> means it's not created when the file is imported — only when <code>get_openai_client()</code> is actually called. This saves memory if the client is never needed (e.g., during page loads that don't make API calls).</p>
+
+<h2>Section 8: Security</h2>
+<pre>
+MAX_QUERY_LENGTH = <span class="num">1000</span>
+</pre>
+<p>Limits user questions to 1,000 characters. This is a basic defense against <strong>prompt injection</strong> — where a malicious user sends a very long prompt to trick the AI or waste your OpenAI credits.</p>
+
+<h2>How Other Files Use config.py</h2>
+<pre>
+<span class="cmt"># In embedandchunk.py, AnswerAll.py, app.py, etc.:</span>
+<span class="kw">from</span> config <span class="kw">import</span> (
+    OPENAI_API_KEY,
+    OPENAI_EMBEDDING_MODEL,
+    DATA_DIR,
+    get_openai_client,
+    logger,
+)
+</pre>
+<p>Every file imports what it needs from <code>config</code>. Nobody hard-codes paths or API keys.</p>
+
+<div class="nav-bottom">
+  <a href="setup.html" class="btn btn-outline">← Setup</a>
+  <a href="pipeline.html" class="btn">Next: PDF Pipeline →</a>
+</div>
+
+</div>
+</body>
+</html>

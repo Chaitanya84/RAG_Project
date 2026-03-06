@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Setup &amp; Installation — RAG Docs</title>
+<style>
+  :root{--primary:#4285F4;--bg:#f8f9fa;--card:#fff;--text:#212529;--muted:#6c757d;--code-bg:#1e1e1e;--code-fg:#d4d4d4;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;}
+  .topbar{background:var(--primary);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  .topbar a{color:#fff;text-decoration:none;font-weight:600;} .topbar .nav a{margin-left:18px;opacity:.85;font-size:.9rem;} .topbar .nav a:hover{opacity:1;}
+  .container{max-width:860px;margin:0 auto;padding:40px 20px 60px;}
+  h1{font-size:2rem;margin-bottom:8px;} h2{font-size:1.45rem;margin:36px 0 10px;padding-bottom:6px;border-bottom:2px solid #e9ecef;} h3{font-size:1.15rem;margin:24px 0 8px;}
+  p,li{margin-bottom:10px;} ul,ol{padding-left:24px;}
+  .callout{background:#e8f0fe;border-left:4px solid var(--primary);padding:16px 20px;border-radius:0 8px 8px 0;margin:20px 0;}
+  .callout-green{background:#e6f4ea;border-left-color:#34a853;} .callout-yellow{background:#fef7e0;border-left-color:#fbbc04;} .callout-red{background:#fce8e6;border-left-color:#ea4335;}
+  code{background:#e9ecef;padding:2px 6px;border-radius:4px;font-size:.88em;}
+  pre{background:var(--code-bg);color:var(--code-fg);padding:18px;border-radius:8px;overflow-x:auto;font-size:.85rem;line-height:1.5;margin:14px 0;}
+  .kw{color:#569cd6;} .str{color:#ce9178;} .cmt{color:#6a9955;} .fn{color:#dcdcaa;} .num{color:#b5cea8;}
+  .step{background:var(--card);border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin:20px 0;}
+  .step-num{display:inline-block;background:var(--primary);color:#fff;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-weight:700;margin-right:10px;}
+  .nav-bottom{display:flex;justify-content:space-between;margin-top:50px;padding-top:20px;border-top:2px solid #e9ecef;}
+  .btn{display:inline-block;background:var(--primary);color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem;} .btn:hover{background:#3367d6;}
+  .btn-outline{background:transparent;color:var(--primary);border:2px solid var(--primary);} .btn-outline:hover{background:var(--primary);color:#fff;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="index.html">📚 RAG Docs</a>
+  <div class="nav"><a href="index.html">Home</a><a href="overview.html">Overview</a><a href="config.html">Config</a><a href="pipeline.html">Pipeline</a><a href="retrieval.html">Retrieval</a><a href="frontend.html">Frontend</a><a href="deployment.html">Deploy</a><a href="libraries.html">Libraries</a></div>
+</div>
+<div class="container">
+
+<h1>⚙️ 2. Setup &amp; Installation</h1>
+<p>Everything you need to run the app on your own computer. Follow these steps in order.</p>
+
+<h2>Prerequisites</h2>
+<ul>
+  <li><strong>Python 3.10+</strong> (we use 3.12) — <a href="https://www.python.org/downloads/" target="_blank">Download</a></li>
+  <li><strong>Git</strong> — to clone the repository</li>
+  <li><strong>An OpenAI API key</strong> — requires an OpenAI account with billing enabled</li>
+  <li><strong>Google Cloud credentials</strong> — for the OAuth login (optional for local testing)</li>
+</ul>
+
+<!-- STEP 1 -->
+<div class="step">
+<h3><span class="step-num">1</span> Clone the Repository</h3>
+<pre>
+git clone https://github.com/YOUR_USERNAME/RAG_Project.git
+cd RAG_Project/RAG_Streamlit_App
+</pre>
+<div class="callout">
+  <strong>💡 What is <code>git clone</code>?</strong> It downloads a copy of the entire project (code + history) from GitHub to your computer. You only need to do this once.
+</div>
+</div>
+
+<!-- STEP 2 -->
+<div class="step">
+<h3><span class="step-num">2</span> Create a Virtual Environment</h3>
+<pre>
+<span class="cmt"># Create the virtual environment</span>
+python -m venv .venv
+
+<span class="cmt"># Activate it</span>
+<span class="cmt"># On Linux/Mac:</span>
+source .venv/bin/activate
+
+<span class="cmt"># On Windows:</span>
+.venv\Scripts\activate
+</pre>
+<div class="callout callout-green">
+  <strong>💡 What is a Virtual Environment?</strong> It's an isolated folder where Python packages are installed. Without it, packages install globally and can conflict with other projects. With it, each project has its own clean set of packages. The <code>.venv</code> folder contains the isolated Python + packages.
+</div>
+<p>You'll know it's active when your terminal prompt shows <code>(.venv)</code> at the beginning.</p>
+</div>
+
+<!-- STEP 3 -->
+<div class="step">
+<h3><span class="step-num">3</span> Install Dependencies</h3>
+<pre>
+pip install -r requirements.txt
+</pre>
+<p>This reads the <code>requirements.txt</code> file and installs all listed packages:</p>
+<pre>
+streamlit>=1.30.0
+openai>=1.0.0
+PyMuPDF>=1.23.0
+pandas>=2.0.0
+numpy>=1.24.0
+tqdm>=4.65.0
+tenacity>=8.1.0
+python-dotenv>=1.0.0
+google-auth-oauthlib
+google-auth
+requests
+</pre>
+<div class="callout">
+  <strong>💡 What does <code>>=1.30.0</code> mean?</strong> "Install version 1.30.0 or any newer version." This ensures you get bug fixes and improvements while maintaining compatibility. If no version is specified (like <code>requests</code>), pip installs the latest available version.
+</div>
+</div>
+
+<!-- STEP 4 -->
+<div class="step">
+<h3><span class="step-num">4</span> Get an OpenAI API Key</h3>
+<ol>
+  <li>Go to <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a></li>
+  <li>Sign up or log in</li>
+  <li>Click <strong>"Create new secret key"</strong></li>
+  <li>Copy the key (starts with <code>sk-proj-</code>) — you can only see it once!</li>
+  <li>Add billing info under <strong>Settings → Billing</strong> (the free tier won't work for embeddings)</li>
+</ol>
+<div class="callout callout-yellow">
+  <strong>💰 Cost estimate:</strong> Processing a 100-page PDF costs roughly $0.01–0.05 (embeddings). Each question/answer costs about $0.001 (chat). A full day of testing might cost $0.50–$2.00 total.
+</div>
+</div>
+
+<!-- STEP 5 -->
+<div class="step">
+<h3><span class="step-num">5</span> Create a <code>.env</code> File</h3>
+<p>Copy the example and fill in your values:</p>
+<pre>
+cp .env.example .env
+</pre>
+<p>Then edit <code>.env</code>:</p>
+<pre>
+OPENAI_API_KEY=sk-proj-your-key-here
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OPENAI_CHAT_MODEL=gpt-4o-mini
+DEBUG=true
+REDIRECT_URI=http://localhost:8501/
+</pre>
+<div class="callout callout-red">
+  <strong>⚠️ Never commit <code>.env</code> to Git!</strong> It contains your secret API key. The <code>.gitignore</code> file already excludes it. If you accidentally commit it, rotate your key immediately on the OpenAI dashboard.
+</div>
+</div>
+
+<!-- STEP 6 -->
+<div class="step">
+<h3><span class="step-num">6</span> Google OAuth Setup (Optional)</h3>
+<p>The login page uses Google OAuth. To enable it:</p>
+<ol>
+  <li>Go to <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
+  <li>Create a new project (or select an existing one)</li>
+  <li>Navigate to <strong>APIs &amp; Services → Credentials</strong></li>
+  <li>Click <strong>"Create Credentials" → "OAuth 2.0 Client ID"</strong></li>
+  <li>Set application type to <strong>"Web application"</strong></li>
+  <li>Add <code>http://localhost:8501/</code> as an <strong>Authorized redirect URI</strong></li>
+  <li>Download the JSON file and save it as <code>client_secret.json</code> in the <code>RAG_Streamlit_App/</code> folder</li>
+</ol>
+<div class="callout">
+  <strong>💡 What is OAuth?</strong> A protocol that lets users log in via Google (or GitHub, Facebook, etc.) without creating a new account on your app. Your app never sees the user's Google password — it only gets their email address after they approve access on Google's own login page.
+</div>
+</div>
+
+<!-- STEP 7 -->
+<div class="step">
+<h3><span class="step-num">7</span> Run the App</h3>
+<pre>
+streamlit run app.py
+</pre>
+<p>Streamlit will print:</p>
+<pre>
+  You can now view your Streamlit app in your browser.
+  Local URL: http://localhost:8501
+</pre>
+<p>Open that URL in your browser. You should see the login page!</p>
+</div>
+
+<h2>Troubleshooting</h2>
+<table style="width:100%;border-collapse:collapse;margin:14px 0;">
+  <tr><th style="border:1px solid #dee2e6;padding:10px 14px;background:#e9ecef;">Problem</th><th style="border:1px solid #dee2e6;padding:10px 14px;background:#e9ecef;">Solution</th></tr>
+  <tr><td style="border:1px solid #dee2e6;padding:10px 14px;"><code>ModuleNotFoundError</code></td><td style="border:1px solid #dee2e6;padding:10px 14px;">Make sure your virtual environment is activated (<code>source .venv/bin/activate</code>)</td></tr>
+  <tr><td style="border:1px solid #dee2e6;padding:10px 14px;"><code>OPENAI_API_KEY is not set</code></td><td style="border:1px solid #dee2e6;padding:10px 14px;">Check that <code>.env</code> exists and the key is correct</td></tr>
+  <tr><td style="border:1px solid #dee2e6;padding:10px 14px;">Port 8501 already in use</td><td style="border:1px solid #dee2e6;padding:10px 14px;"><code>streamlit run app.py --server.port=8502</code></td></tr>
+  <tr><td style="border:1px solid #dee2e6;padding:10px 14px;">OAuth redirect fails</td><td style="border:1px solid #dee2e6;padding:10px 14px;">Ensure <code>REDIRECT_URI</code> in <code>.env</code> matches the Google Console setting exactly</td></tr>
+</table>
+
+<div class="nav-bottom">
+  <a href="overview.html" class="btn btn-outline">← Overview</a>
+  <a href="config.html" class="btn">Next: Configuration →</a>
+</div>
+
+</div>
+</body>
+</html>

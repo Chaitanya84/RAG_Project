@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Libraries &amp; Tools — RAG Docs</title>
+<style>
+  :root{--primary:#4285F4;--bg:#f8f9fa;--card:#fff;--text:#212529;--muted:#6c757d;--code-bg:#1e1e1e;--code-fg:#d4d4d4;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;}
+  .topbar{background:var(--primary);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  .topbar a{color:#fff;text-decoration:none;font-weight:600;} .topbar .nav a{margin-left:18px;opacity:.85;font-size:.9rem;} .topbar .nav a:hover{opacity:1;}
+  .container{max-width:860px;margin:0 auto;padding:40px 20px 60px;}
+  h1{font-size:2rem;margin-bottom:8px;} h2{font-size:1.45rem;margin:36px 0 10px;padding-bottom:6px;border-bottom:2px solid #e9ecef;} h3{font-size:1.15rem;margin:24px 0 8px;}
+  p,li{margin-bottom:10px;} ul,ol{padding-left:24px;}
+  .callout{background:#e8f0fe;border-left:4px solid var(--primary);padding:16px 20px;border-radius:0 8px 8px 0;margin:20px 0;}
+  .callout-green{background:#e6f4ea;border-left-color:#34a853;}
+  code{background:#e9ecef;padding:2px 6px;border-radius:4px;font-size:.88em;}
+  pre{background:var(--code-bg);color:var(--code-fg);padding:18px;border-radius:8px;overflow-x:auto;font-size:.85rem;line-height:1.5;margin:14px 0;}
+  .kw{color:#569cd6;} .str{color:#ce9178;} .cmt{color:#6a9955;} .fn{color:#dcdcaa;} .num{color:#b5cea8;}
+  .lib{background:var(--card);border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin:20px 0;}
+  .lib h3{margin-top:0;} .lib .meta{color:var(--muted);font-size:.85rem;margin-bottom:8px;}
+  table{width:100%;border-collapse:collapse;margin:14px 0;} th,td{border:1px solid #dee2e6;padding:10px 14px;text-align:left;font-size:.92rem;} th{background:#e9ecef;}
+  .nav-bottom{display:flex;justify-content:space-between;margin-top:50px;padding-top:20px;border-top:2px solid #e9ecef;}
+  .btn{display:inline-block;background:var(--primary);color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem;} .btn:hover{background:#3367d6;}
+  .btn-outline{background:transparent;color:var(--primary);border:2px solid var(--primary);} .btn-outline:hover{background:var(--primary);color:#fff;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="index.html">📚 RAG Docs</a>
+  <div class="nav"><a href="index.html">Home</a><a href="overview.html">Overview</a><a href="setup.html">Setup</a><a href="config.html">Config</a><a href="pipeline.html">Pipeline</a><a href="retrieval.html">Retrieval</a><a href="frontend.html">Frontend</a><a href="deployment.html">Deploy</a></div>
+</div>
+<div class="container">
+
+<h1>📦 8. Libraries &amp; Tools</h1>
+<p>Every third-party Python library used in this project, explained for beginners. Each entry describes what it does, why we need it, and shows a mini-example.</p>
+
+<h2>Quick Reference Table</h2>
+<table>
+  <tr><th>Package</th><th>Import Name</th><th>Role in This App</th></tr>
+  <tr><td>streamlit</td><td><code>streamlit</code></td><td>Web UI framework</td></tr>
+  <tr><td>openai</td><td><code>openai</code></td><td>Embeddings + Chat API client</td></tr>
+  <tr><td>PyMuPDF</td><td><code>fitz</code></td><td>PDF text extraction</td></tr>
+  <tr><td>pandas</td><td><code>pandas</code></td><td>CSV / tabular data handling</td></tr>
+  <tr><td>numpy</td><td><code>numpy</code></td><td>Fast array math (cosine similarity)</td></tr>
+  <tr><td>tqdm</td><td><code>tqdm</code></td><td>Progress bars</td></tr>
+  <tr><td>tenacity</td><td><code>tenacity</code></td><td>Auto-retry with exponential backoff</td></tr>
+  <tr><td>python-dotenv</td><td><code>dotenv</code></td><td>Reads <code>.env</code> files</td></tr>
+  <tr><td>google-auth-oauthlib</td><td><code>google_auth_oauthlib</code></td><td>Google OAuth2 login flow</td></tr>
+  <tr><td>google-auth</td><td><code>google.auth</code></td><td>Token verification</td></tr>
+  <tr><td>requests</td><td><code>requests</code></td><td>HTTP requests (token exchange)</td></tr>
+</table>
+
+<!-- ==================== STREAMLIT ==================== -->
+<div class="lib">
+<h3>🌐 Streamlit</h3>
+<p class="meta">Install: <code>pip install streamlit</code> · Import: <code>import streamlit as st</code> · Used in: all page files</p>
+<p>Streamlit turns Python scripts into interactive web apps. You write Python, it renders HTML. Every time a user clicks a button or types text, Streamlit <strong>re-runs your entire script</strong> from top to bottom.</p>
+<pre>
+<span class="kw">import</span> streamlit <span class="kw">as</span> st
+
+st.title(<span class="str">"Hello World"</span>)
+name = st.text_input(<span class="str">"What's your name?"</span>)
+<span class="kw">if</span> name:
+    st.write(f<span class="str">"Hello, {name}!"</span>)
+</pre>
+<p><strong>Key widgets used in this project:</strong></p>
+<ul>
+  <li><code>st.file_uploader()</code> — Upload PDF files</li>
+  <li><code>st.chat_input()</code> / <code>st.chat_message()</code> — Chat interface</li>
+  <li><code>st.form()</code> / <code>st.radio()</code> — Quiz form with radio buttons</li>
+  <li><code>st.session_state</code> — Persistent dictionary across page re-runs</li>
+  <li><code>@st.cache_resource</code> — Cache expensive computations (like loading embeddings)</li>
+  <li><code>st.spinner()</code> — Loading animation</li>
+</ul>
+</div>
+
+<!-- ==================== OPENAI ==================== -->
+<div class="lib">
+<h3>🤖 OpenAI</h3>
+<p class="meta">Install: <code>pip install openai</code> · Import: <code>from openai import OpenAI</code> · Used in: AnswerAll.py, embedandchunk.py</p>
+<p>The official Python client for OpenAI's API. We use two endpoints:</p>
+<ol>
+  <li><strong>Embeddings API</strong> — Converts text into numerical vectors (1,536 numbers).</li>
+  <li><strong>Chat Completions API</strong> — Sends a prompt and gets a text response (like ChatGPT).</li>
+</ol>
+<pre>
+<span class="kw">from</span> openai <span class="kw">import</span> OpenAI
+
+client = OpenAI(api_key=<span class="str">"sk-proj-..."</span>)
+
+<span class="cmt"># Embeddings</span>
+response = client.embeddings.create(
+    model=<span class="str">"text-embedding-3-small"</span>,
+    input=[<span class="str">"Hello world"</span>],
+)
+vector = response.data[<span class="num">0</span>].embedding  <span class="cmt"># List of 1,536 floats</span>
+
+<span class="cmt"># Chat</span>
+response = client.chat.completions.create(
+    model=<span class="str">"gpt-4o-mini"</span>,
+    messages=[{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: <span class="str">"What is RAG?"</span>}],
+)
+answer = response.choices[<span class="num">0</span>].message.content
+</pre>
+</div>
+
+<!-- ==================== PYMUPDF ==================== -->
+<div class="lib">
+<h3>📄 PyMuPDF (fitz)</h3>
+<p class="meta">Install: <code>pip install PyMuPDF</code> · Import: <code>import fitz</code> · Used in: embedandchunk.py</p>
+<p>Reads PDF files and extracts text from each page. The import name <code>fitz</code> comes from the underlying C library (MuPDF) by Artifex. It's fast and handles most PDF formats including scanned text (if OCR was applied).</p>
+<pre>
+<span class="kw">import</span> fitz
+
+doc = fitz.open(<span class="str">"document.pdf"</span>)
+<span class="kw">for</span> page <span class="kw">in</span> doc:
+    text = page.get_text()   <span class="cmt"># Plain text of one page</span>
+    print(text[:100])
+doc.close()
+</pre>
+<div class="callout callout-green">
+  <strong>💡 Why not pdfplumber or PyPDF2?</strong> PyMuPDF is significantly faster (10–50x) and uses less memory. It also handles edge cases like embedded fonts and rotated pages better.
+</div>
+</div>
+
+<!-- ==================== PANDAS ==================== -->
+<div class="lib">
+<h3>📊 pandas</h3>
+<p class="meta">Install: <code>pip install pandas</code> · Import: <code>import pandas as pd</code> · Used in: embedandchunk.py, AnswerAll.py</p>
+<p>The standard Python library for working with tabular data (rows and columns). We use it to read/write CSV files and convert them to lists of dictionaries.</p>
+<pre>
+<span class="kw">import</span> pandas <span class="kw">as</span> pd
+
+<span class="cmt"># Read a CSV file</span>
+df = pd.read_csv(<span class="str">"chunks.csv"</span>)
+print(df.shape)        <span class="cmt"># (1366, 6) → 1,366 rows, 6 columns</span>
+print(df.columns)      <span class="cmt"># ['source_file', 'page_number', 'sentence_chunk', ...]</span>
+
+<span class="cmt"># Convert to list of dicts (used by AnswerAll.py)</span>
+records = df.to_dict(orient=<span class="str">"records"</span>)
+<span class="cmt"># [{"source_file": "book.pdf", "page_number": 1, ...}, ...]</span>
+
+<span class="cmt"># Write a DataFrame to CSV</span>
+df.to_csv(<span class="str">"output.csv"</span>, index=False)
+</pre>
+</div>
+
+<!-- ==================== NUMPY ==================== -->
+<div class="lib">
+<h3>🔢 NumPy</h3>
+<p class="meta">Install: <code>pip install numpy</code> · Import: <code>import numpy as np</code> · Used in: AnswerAll.py, embedandchunk.py</p>
+<p>NumPy provides fast array operations written in C. Pure Python loops over 1,366 vectors × 1,536 dimensions would take seconds. NumPy does it in <strong>milliseconds</strong>.</p>
+<pre>
+<span class="kw">import</span> numpy <span class="kw">as</span> np
+
+<span class="cmt"># Create an array</span>
+a = np.array([<span class="num">1.0</span>, <span class="num">2.0</span>, <span class="num">3.0</span>])
+
+<span class="cmt"># Vector norm (length)</span>
+print(np.linalg.norm(a))  <span class="cmt"># 3.7416...</span>
+
+<span class="cmt"># Matrix multiplication (used for cosine similarity)</span>
+b = np.array([[<span class="num">1</span>, <span class="num">0</span>, <span class="num">0</span>], [<span class="num">0</span>, <span class="num">1</span>, <span class="num">0</span>]])
+print(b @ a)  <span class="cmt"># [1., 2.] — dot product of each row with a</span>
+
+<span class="cmt"># Sorting indices (used to find top-k chunks)</span>
+scores = np.array([<span class="num">0.3</span>, <span class="num">0.9</span>, <span class="num">0.1</span>, <span class="num">0.7</span>])
+top_3 = np.argsort(scores)[::-<span class="num">1</span>][:<span class="num">3</span>]  <span class="cmt"># [1, 3, 0] — indices of highest scores</span>
+</pre>
+</div>
+
+<!-- ==================== TQDM ==================== -->
+<div class="lib">
+<h3>⏳ tqdm</h3>
+<p class="meta">Install: <code>pip install tqdm</code> · Import: <code>from tqdm.auto import tqdm</code> · Used in: embedandchunk.py</p>
+<p>Wraps any loop or iterable with a smart progress bar. Used during PDF processing and embedding creation so you can see how far along the operation is.</p>
+<pre>
+<span class="kw">from</span> tqdm.auto <span class="kw">import</span> tqdm
+
+<span class="kw">for</span> item <span class="kw">in</span> tqdm(range(<span class="num">100</span>), desc=<span class="str">"Processing"</span>):
+    do_work(item)
+
+<span class="cmt"># Output: Processing: 45%|████████▌          | 45/100 [00:02<00:03]</span>
+</pre>
+</div>
+
+<!-- ==================== TENACITY ==================== -->
+<div class="lib">
+<h3>🔄 tenacity</h3>
+<p class="meta">Install: <code>pip install tenacity</code> · Import: <code>from tenacity import retry, ...</code> · Used in: AnswerAll.py, embedandchunk.py</p>
+<p>Automatically retries function calls that fail, with configurable delays. Essential for API calls that can fail due to rate limits, timeouts, or transient network issues.</p>
+<pre>
+<span class="kw">from</span> tenacity <span class="kw">import</span> retry, stop_after_attempt, wait_exponential
+
+@retry(
+    stop=stop_after_attempt(<span class="num">4</span>),                         <span class="cmt"># Give up after 4 tries</span>
+    wait=wait_exponential(multiplier=<span class="num">1</span>, min=<span class="num">2</span>, max=<span class="num">30</span>), <span class="cmt"># Wait 2s, 4s, 8s...</span>
+)
+<span class="kw">def</span> <span class="fn">call_api</span>():
+    <span class="cmt"># If this raises an exception, tenacity retries automatically</span>
+    <span class="kw">return</span> requests.get(<span class="str">"https://api.example.com/data"</span>)
+</pre>
+<p>Without tenacity, a single API timeout would crash the entire processing pipeline. With it, the app gracefully handles temporary failures.</p>
+</div>
+
+<!-- ==================== PYTHON-DOTENV ==================== -->
+<div class="lib">
+<h3>🔐 python-dotenv</h3>
+<p class="meta">Install: <code>pip install python-dotenv</code> · Import: <code>from dotenv import load_dotenv</code> · Used in: config.py</p>
+<p>Reads key-value pairs from a <code>.env</code> file and sets them as environment variables. This is how we keep secrets (API keys) out of source code.</p>
+<pre>
+<span class="cmt"># .env file:</span>
+<span class="cmt"># OPENAI_API_KEY=sk-proj-abc123</span>
+<span class="cmt"># DEBUG=true</span>
+
+<span class="kw">from</span> dotenv <span class="kw">import</span> load_dotenv
+<span class="kw">import</span> os
+
+load_dotenv()  <span class="cmt"># Reads .env file</span>
+key = os.getenv(<span class="str">"OPENAI_API_KEY"</span>)  <span class="cmt"># "sk-proj-abc123"</span>
+</pre>
+</div>
+
+<!-- ==================== GOOGLE AUTH ==================== -->
+<div class="lib">
+<h3>🔑 google-auth &amp; google-auth-oauthlib</h3>
+<p class="meta">Install: <code>pip install google-auth google-auth-oauthlib</code> · Used in: app.py</p>
+<p>Two libraries that work together for Google OAuth login:</p>
+<ul>
+  <li><strong>google-auth-oauthlib</strong> — Builds the OAuth2 login flow (creating the login URL, handling the callback).</li>
+  <li><strong>google-auth</strong> — Verifies the ID token Google returns after login, extracting the user's email.</li>
+</ul>
+<pre>
+<span class="kw">from</span> google.oauth2 <span class="kw">import</span> id_token
+<span class="kw">from</span> google.auth.transport <span class="kw">import</span> requests <span class="kw">as</span> google_requests
+
+<span class="cmt"># Verify the token Google sent back</span>
+id_info = id_token.verify_oauth2_token(
+    token,
+    google_requests.Request(),
+    client_id,
+)
+email = id_info[<span class="str">"email"</span>]  <span class="cmt"># "user@gmail.com"</span>
+</pre>
+</div>
+
+<!-- ==================== REQUESTS ==================== -->
+<div class="lib">
+<h3>🌍 requests</h3>
+<p class="meta">Install: <code>pip install requests</code> · Import: <code>import requests</code> · Used in: app.py</p>
+<p>The most popular Python HTTP client. Used in this project to exchange the OAuth authorization code for tokens by making a POST request to Google's token endpoint.</p>
+<pre>
+<span class="kw">import</span> requests
+
+<span class="cmt"># Exchange auth code for tokens</span>
+response = requests.post(<span class="str">"https://oauth2.googleapis.com/token"</span>, data={
+    <span class="str">"code"</span>: auth_code,
+    <span class="str">"client_id"</span>: client_id,
+    <span class="str">"client_secret"</span>: client_secret,
+    <span class="str">"redirect_uri"</span>: redirect_uri,
+    <span class="str">"grant_type"</span>: <span class="str">"authorization_code"</span>,
+})
+tokens = response.json()  <span class="cmt"># {"id_token": "...", "access_token": "..."}</span>
+</pre>
+</div>
+
+<!-- ==================== STDLIB ==================== -->
+<h2>Standard Library Modules Used</h2>
+<p>These come with Python — no <code>pip install</code> needed.</p>
+<table>
+  <tr><th>Module</th><th>What It Does</th><th>Where Used</th></tr>
+  <tr><td><code>os</code></td><td>File paths, environment variables, directory operations</td><td>Everywhere</td></tr>
+  <tr><td><code>sys</code></td><td>Modify Python's module search path (<code>sys.path</code>)</td><td>Page files</td></tr>
+  <tr><td><code>json</code></td><td>Parse/create JSON strings (quiz generation, status files)</td><td>AnswerAll.py, mainPage.py</td></tr>
+  <tr><td><code>pickle</code></td><td>Serialize Python objects to binary files (embeddings)</td><td>embedandchunk.py, AnswerAll.py</td></tr>
+  <tr><td><code>re</code></td><td>Regular expressions (sentence splitting)</td><td>embedandchunk.py</td></tr>
+  <tr><td><code>logging</code></td><td>Structured log messages with severity levels</td><td>config.py (used everywhere)</td></tr>
+  <tr><td><code>threading</code></td><td>Run PDF processing in a background thread</td><td>mainPage.py</td></tr>
+  <tr><td><code>gc</code></td><td>Garbage collection — force memory cleanup</td><td>embedandchunk.py</td></tr>
+  <tr><td><code>csv</code></td><td>Write CSV files row by row (streaming)</td><td>embedandchunk.py</td></tr>
+  <tr><td><code>glob</code></td><td>Find files matching a pattern (e.g., all <code>*.pdf</code>)</td><td>embedandchunk.py</td></tr>
+  <tr><td><code>textwrap</code></td><td>Word-wrap long text for terminal output</td><td>AnswerAll.py (CLI demo)</td></tr>
+  <tr><td><code>time</code></td><td>Sleep / timestamps (polling loop)</td><td>mainPage.py</td></tr>
+  <tr><td><code>random</code></td><td>Random sampling of chunks for quizzes</td><td>quizPage.py</td></tr>
+  <tr><td><code>shutil</code></td><td>Delete directory trees (<code>shutil.rmtree</code>)</td><td>mainPage.py</td></tr>
+  <tr><td><code>urllib.parse</code></td><td>URL encoding for OAuth redirect URLs</td><td>app.py</td></tr>
+</table>
+
+<div class="nav-bottom">
+  <a href="deployment.html" class="btn btn-outline">← Deployment</a>
+  <a href="index.html" class="btn">Back to Home →</a>
+</div>
+
+</div>
+</body>
+</html>

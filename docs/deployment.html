@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deployment — RAG Docs</title>
+<style>
+  :root{--primary:#4285F4;--bg:#f8f9fa;--card:#fff;--text:#212529;--muted:#6c757d;--code-bg:#1e1e1e;--code-fg:#d4d4d4;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;}
+  .topbar{background:var(--primary);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  .topbar a{color:#fff;text-decoration:none;font-weight:600;} .topbar .nav a{margin-left:18px;opacity:.85;font-size:.9rem;} .topbar .nav a:hover{opacity:1;}
+  .container{max-width:860px;margin:0 auto;padding:40px 20px 60px;}
+  h1{font-size:2rem;margin-bottom:8px;} h2{font-size:1.45rem;margin:36px 0 10px;padding-bottom:6px;border-bottom:2px solid #e9ecef;} h3{font-size:1.15rem;margin:24px 0 8px;}
+  p,li{margin-bottom:10px;} ul,ol{padding-left:24px;}
+  .callout{background:#e8f0fe;border-left:4px solid var(--primary);padding:16px 20px;border-radius:0 8px 8px 0;margin:20px 0;}
+  .callout-green{background:#e6f4ea;border-left-color:#34a853;} .callout-yellow{background:#fef7e0;border-left-color:#fbbc04;} .callout-red{background:#fce8e6;border-left-color:#ea4335;}
+  code{background:#e9ecef;padding:2px 6px;border-radius:4px;font-size:.88em;}
+  pre{background:var(--code-bg);color:var(--code-fg);padding:18px;border-radius:8px;overflow-x:auto;font-size:.85rem;line-height:1.5;margin:14px 0;}
+  .kw{color:#569cd6;} .str{color:#ce9178;} .cmt{color:#6a9955;} .fn{color:#dcdcaa;} .num{color:#b5cea8;}
+  table{width:100%;border-collapse:collapse;margin:14px 0;} th,td{border:1px solid #dee2e6;padding:10px 14px;text-align:left;font-size:.92rem;} th{background:#e9ecef;}
+  .step{background:var(--card);border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin:20px 0;}
+  .step-num{display:inline-block;background:var(--primary);color:#fff;width:32px;height:32px;border-radius:50%;text-align:center;line-height:32px;font-weight:700;margin-right:10px;}
+  .nav-bottom{display:flex;justify-content:space-between;margin-top:50px;padding-top:20px;border-top:2px solid #e9ecef;}
+  .btn{display:inline-block;background:var(--primary);color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem;} .btn:hover{background:#3367d6;}
+  .btn-outline{background:transparent;color:var(--primary);border:2px solid var(--primary);} .btn-outline:hover{background:var(--primary);color:#fff;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="index.html">📚 RAG Docs</a>
+  <div class="nav"><a href="index.html">Home</a><a href="overview.html">Overview</a><a href="setup.html">Setup</a><a href="config.html">Config</a><a href="pipeline.html">Pipeline</a><a href="retrieval.html">Retrieval</a><a href="frontend.html">Frontend</a><a href="libraries.html">Libraries</a></div>
+</div>
+<div class="container">
+
+<h1>🚀 7. Deployment on Render</h1>
+<p>This section explains how the app is deployed to <strong>Render</strong> — a cloud hosting platform — so anyone with the URL can use it without installing anything.</p>
+
+<div class="callout">
+  <strong>💡 What is Render?</strong> A cloud platform (like Heroku) where you push your code and they run it on a server 24/7. You get a public URL like <code>https://your-app.onrender.com</code>. The free tier gives 512 MB RAM and spins down after 15 minutes of inactivity.
+</div>
+
+<h2>The Three Deployment Files</h2>
+
+<div class="step">
+<h3>1. <code>Procfile</code> — The Start Command</h3>
+<pre>
+web: streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
+</pre>
+<ul>
+  <li><code>web:</code> — Tells Render this is a web service (not a background worker).</li>
+  <li><code>streamlit run app.py</code> — The command to start the app.</li>
+  <li><code>--server.port=$PORT</code> — Render assigns a random port via the <code>$PORT</code> environment variable. Streamlit must listen on it.</li>
+  <li><code>--server.address=0.0.0.0</code> — Listen on all network interfaces (required so Render's proxy can reach the app).</li>
+</ul>
+<div class="callout callout-green">
+  <strong>💡 What is <code>0.0.0.0</code>?</strong> By default, Streamlit only listens on <code>127.0.0.1</code> (localhost — only your machine). <code>0.0.0.0</code> means "accept connections from any IP address", which is necessary on a server because Render's load balancer connects from a different internal IP.
+</div>
+</div>
+
+<div class="step">
+<h3>2. <code>runtime.txt</code> — Python Version</h3>
+<pre>python-3.12.3</pre>
+<p>Tells Render exactly which Python version to install. This must match the version you developed with locally.</p>
+</div>
+
+<div class="step">
+<h3>3. <code>.streamlit/config.toml</code> — Server Settings</h3>
+<pre>
+[server]
+maxUploadSize = 200        <span class="cmt"># Allow uploading PDFs up to 200 MB</span>
+headless = true            <span class="cmt"># Don't try to open a browser (no GUI on a server)</span>
+address = "0.0.0.0"        <span class="cmt"># Same as Procfile — listen on all interfaces</span>
+enableXsrfProtection = false  <span class="cmt"># Needed for OAuth redirects to work</span>
+maxMessageSize = 200       <span class="cmt"># Max WebSocket message size in MB</span>
+
+[browser]
+gatherUsageStats = false   <span class="cmt"># Don't send telemetry to Streamlit</span>
+
+[theme]
+primaryColor = "#4285F4"   <span class="cmt"># Google blue — matches the login button</span>
+</pre>
+<div class="callout callout-yellow">
+  <strong>⚠️ Why disable XSRF protection?</strong> Cross-Site Request Forgery (XSRF) protection blocks POST requests from other domains. But Google OAuth sends the user back with a POST-like redirect that can trigger this protection. Disabling it is a pragmatic trade-off for a single-user/demo app. For a production app with many users, you'd implement proper CSRF tokens instead.
+</div>
+</div>
+
+<h2>Environment Variables on Render</h2>
+<p>Since <code>.env</code> and <code>client_secret.json</code> are gitignored (they contain secrets), you must set them as <strong>environment variables</strong> in the Render dashboard:</p>
+
+<table>
+  <tr><th>Variable</th><th>Value</th><th>Notes</th></tr>
+  <tr><td><code>OPENAI_API_KEY</code></td><td><code>sk-proj-...</code></td><td>Your OpenAI API key</td></tr>
+  <tr><td><code>OPENAI_EMBEDDING_MODEL</code></td><td><code>text-embedding-3-small</code></td><td>Optional (has default)</td></tr>
+  <tr><td><code>OPENAI_CHAT_MODEL</code></td><td><code>gpt-4o-mini</code></td><td>Optional (has default)</td></tr>
+  <tr><td><code>REDIRECT_URI</code></td><td><code>https://your-app.onrender.com/</code></td><td>Must match Google OAuth config</td></tr>
+  <tr><td><code>GOOGLE_CLIENT_SECRET_JSON</code></td><td><code>{"web":{"client_id":"..."}}</code></td><td>The entire contents of <code>client_secret.json</code> as a string</td></tr>
+  <tr><td><code>DEBUG</code></td><td><code>false</code></td><td>Disable debug logging in production</td></tr>
+</table>
+
+<div class="callout">
+  <strong>💡 How <code>GOOGLE_CLIENT_SECRET_JSON</code> works:</strong> Since <code>client_secret.json</code> isn't in the repo, <code>config.py</code> checks if the file exists on startup. If it doesn't (on Render), it reads the <code>GOOGLE_CLIENT_SECRET_JSON</code> env var and <strong>creates the file on disk</strong> at runtime. Clever trick to avoid committing secrets.
+</div>
+
+<h2>Step-by-Step Render Deployment</h2>
+
+<div class="step">
+<h3><span class="step-num">1</span> Push Code to GitHub</h3>
+<pre>
+git add .
+git commit -m "Ready for deployment"
+git push origin main</pre>
+</div>
+
+<div class="step">
+<h3><span class="step-num">2</span> Create a Render Web Service</h3>
+<ol>
+  <li>Go to <a href="https://render.com" target="_blank">render.com</a> and sign up</li>
+  <li>Click <strong>"New +" → "Web Service"</strong></li>
+  <li>Connect your GitHub repo</li>
+  <li>Set <strong>Root Directory</strong> to <code>RAG_Streamlit_App</code></li>
+  <li>Set <strong>Build Command</strong> to <code>pip install -r requirements.txt</code></li>
+  <li>Set <strong>Start Command</strong> to <code>streamlit run app.py --server.port=$PORT --server.address=0.0.0.0</code> (or leave blank to use Procfile)</li>
+  <li>Add all environment variables from the table above</li>
+  <li>Click <strong>"Create Web Service"</strong></li>
+</ol>
+</div>
+
+<div class="step">
+<h3><span class="step-num">3</span> Update Google OAuth Redirect</h3>
+<p>In the Google Cloud Console, add your Render URL as an authorized redirect URI:</p>
+<pre>https://your-app.onrender.com/</pre>
+<p>This must exactly match the <code>REDIRECT_URI</code> environment variable on Render.</p>
+</div>
+
+<h2>Memory Optimization for Render (512 MB)</h2>
+<p>The free tier of Render only gives 512 MB of RAM. The project has several strategies to stay within this limit:</p>
+
+<table>
+  <tr><th>Strategy</th><th>Where</th><th>What It Does</th></tr>
+  <tr><td>Generator-based PDF reading</td><td><code>embedandchunk.py</code></td><td>Reads one page at a time instead of loading entire PDF</td></tr>
+  <tr><td>Regex instead of spaCy</td><td><code>embedandchunk.py</code></td><td>Saves ~150 MB by not loading an NLP model</td></tr>
+  <tr><td>Streaming CSV writes</td><td><code>embedandchunk.py</code></td><td>Writes rows to disk immediately</td></tr>
+  <tr><td><code>gc.collect()</code></td><td><code>embedandchunk.py</code></td><td>Forces Python garbage collector between phases</td></tr>
+  <tr><td>Background thread</td><td><code>mainPage.py</code></td><td>Processing runs in a thread so the UI stays responsive</td></tr>
+  <tr><td><code>@st.cache_resource</code></td><td><code>chatPage.py</code>, <code>quizPage.py</code></td><td>Loads embeddings only once, not on every page re-run</td></tr>
+</table>
+
+<h2>Troubleshooting Common Issues</h2>
+
+<table>
+  <tr><th>Problem</th><th>Cause</th><th>Fix</th></tr>
+  <tr><td>App crashes with "Killed"</td><td>Out of memory (512 MB exceeded)</td><td>Reduce PDF size or upgrade Render plan</td></tr>
+  <tr><td>OAuth login fails</td><td>Redirect URI mismatch</td><td>Ensure <code>REDIRECT_URI</code> on Render matches Google Console exactly (include trailing slash)</td></tr>
+  <tr><td>"OPENAI_API_KEY is not set"</td><td>Env var not configured</td><td>Set it in Render's Environment tab</td></tr>
+  <tr><td>App takes 30+ seconds to load</td><td>Free tier spins down after inactivity</td><td>Normal — first request "wakes up" the service</td></tr>
+  <tr><td><code>client_secret.json</code> not found</td><td><code>GOOGLE_CLIENT_SECRET_JSON</code> env var missing</td><td>Paste the entire JSON contents as an env var on Render</td></tr>
+</table>
+
+<div class="nav-bottom">
+  <a href="frontend.html" class="btn btn-outline">← Frontend</a>
+  <a href="libraries.html" class="btn">Next: Libraries →</a>
+</div>
+
+</div>
+</body>
+</html>

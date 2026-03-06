@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retrieval &amp; Answering — RAG Docs</title>
+<style>
+  :root{--primary:#4285F4;--bg:#f8f9fa;--card:#fff;--text:#212529;--muted:#6c757d;--code-bg:#1e1e1e;--code-fg:#d4d4d4;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;}
+  .topbar{background:var(--primary);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  .topbar a{color:#fff;text-decoration:none;font-weight:600;} .topbar .nav a{margin-left:18px;opacity:.85;font-size:.9rem;} .topbar .nav a:hover{opacity:1;}
+  .container{max-width:860px;margin:0 auto;padding:40px 20px 60px;}
+  h1{font-size:2rem;margin-bottom:8px;} h2{font-size:1.45rem;margin:36px 0 10px;padding-bottom:6px;border-bottom:2px solid #e9ecef;} h3{font-size:1.15rem;margin:24px 0 8px;}
+  p,li{margin-bottom:10px;} ul,ol{padding-left:24px;}
+  .callout{background:#e8f0fe;border-left:4px solid var(--primary);padding:16px 20px;border-radius:0 8px 8px 0;margin:20px 0;}
+  .callout-green{background:#e6f4ea;border-left-color:#34a853;} .callout-yellow{background:#fef7e0;border-left-color:#fbbc04;}
+  code{background:#e9ecef;padding:2px 6px;border-radius:4px;font-size:.88em;}
+  pre{background:var(--code-bg);color:var(--code-fg);padding:18px;border-radius:8px;overflow-x:auto;font-size:.85rem;line-height:1.5;margin:14px 0;}
+  .kw{color:#569cd6;} .str{color:#ce9178;} .cmt{color:#6a9955;} .fn{color:#dcdcaa;} .num{color:#b5cea8;}
+  table{width:100%;border-collapse:collapse;margin:14px 0;} th,td{border:1px solid #dee2e6;padding:10px 14px;text-align:left;font-size:.92rem;} th{background:#e9ecef;}
+  .phase{background:var(--card);border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin:20px 0;border-left:5px solid var(--primary);}
+  .nav-bottom{display:flex;justify-content:space-between;margin-top:50px;padding-top:20px;border-top:2px solid #e9ecef;}
+  .btn{display:inline-block;background:var(--primary);color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem;} .btn:hover{background:#3367d6;}
+  .btn-outline{background:transparent;color:var(--primary);border:2px solid var(--primary);} .btn-outline:hover{background:var(--primary);color:#fff;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="index.html">📚 RAG Docs</a>
+  <div class="nav"><a href="index.html">Home</a><a href="overview.html">Overview</a><a href="setup.html">Setup</a><a href="config.html">Config</a><a href="pipeline.html">Pipeline</a><a href="frontend.html">Frontend</a><a href="deployment.html">Deploy</a><a href="libraries.html">Libraries</a></div>
+</div>
+<div class="container">
+
+<h1>🔍 5. Retrieval &amp; Answering — <code>AnswerAll.py</code></h1>
+<p>This file is the <strong>"brain"</strong> of the app. It loads the pre-built knowledge base, searches it for relevant chunks, builds prompts, and gets answers from ChatGPT. It also generates quizzes.</p>
+
+<h2>All Functions at a Glance</h2>
+<table>
+  <tr><th>Function</th><th>Purpose</th><th>Called By</th></tr>
+  <tr><td><code>load_metadata_and_embeddings()</code></td><td>Load chunks CSV + embeddings .pkl from disk</td><td>chatPage, quizPage</td></tr>
+  <tr><td><code>embed_query_openai()</code></td><td>Convert user's question → 1,536-dim vector</td><td>retrieve_relevant_resources()</td></tr>
+  <tr><td><code>cosine_similarity()</code></td><td>Compare question vector vs all chunk vectors</td><td>retrieve_relevant_resources()</td></tr>
+  <tr><td><code>retrieve_relevant_resources()</code></td><td>Find top-3 most similar chunks</td><td>answer_with_rag_cached(), generate_quiz()</td></tr>
+  <tr><td><code>prompt_formatter()</code></td><td>Build the instruction + context prompt</td><td>answer_with_rag_cached()</td></tr>
+  <tr><td><code>_call_chat_api()</code></td><td>Send prompt to ChatGPT, get answer</td><td>answer_with_rag_cached()</td></tr>
+  <tr><td><code>answer_with_rag_cached()</code></td><td>Full RAG pipeline: search → prompt → answer</td><td>chatPage.py</td></tr>
+  <tr><td><code>generate_quiz()</code></td><td>Generate MCQ quiz from knowledge base</td><td>quizPage.py</td></tr>
+</table>
+
+<!-- LOADING -->
+<h2>Step 1: Loading the Knowledge Base</h2>
+<pre>
+<span class="kw">def</span> <span class="fn">load_metadata_and_embeddings</span>(csv_path, embeddings_path):
+    df = pd.read_csv(csv_path)                 <span class="cmt"># Load chunks CSV as a table</span>
+
+    <span class="kw">with</span> open(embeddings_path, <span class="str">"rb"</span>) <span class="kw">as</span> f:
+        embeddings = pickle.load(f)            <span class="cmt"># Load the NumPy array</span>
+
+    <span class="cmt"># Validation: rows in CSV must match rows in embeddings</span>
+    <span class="kw">if</span> df.shape[<span class="num">0</span>] != embeddings.shape[<span class="num">0</span>]:
+        <span class="kw">raise</span> ValueError(<span class="str">"Mismatch between CSV and embeddings!"</span>)
+
+    pages_and_chunks = df.to_dict(orient=<span class="str">"records"</span>)  <span class="cmt"># List of dicts</span>
+    <span class="kw">return</span> pages_and_chunks, embeddings
+</pre>
+<div class="callout">
+  <strong>💡 What is <code>df.to_dict(orient="records")</code>?</strong> It converts a pandas DataFrame (a table) into a list of dictionaries. Each row becomes one dict, like <code>{"source_file": "textbook.pdf", "page_number": 5, "sentence_chunk": "The cat sat..."}</code>. This makes it easy to access fields by name later.
+</div>
+
+<!-- EMBEDDING THE QUERY -->
+<h2>Step 2: Embedding the User's Question</h2>
+<pre>
+@retry(...)  <span class="cmt"># Auto-retry on rate limits or timeouts</span>
+<span class="kw">def</span> <span class="fn">embed_query_openai</span>(query):
+    client = get_openai_client()
+    response = client.embeddings.create(
+        model=OPENAI_EMBEDDING_MODEL,    <span class="cmt"># "text-embedding-3-small"</span>
+        input=[query],                    <span class="cmt"># Send the question as a list</span>
+    )
+    <span class="kw">return</span> np.array(response.data[<span class="num">0</span>].embedding, dtype=np.float32)
+</pre>
+<p>This sends the user's question to OpenAI and gets back a vector of 1,536 numbers. It's the <strong>same model</strong> used to embed the chunks, so the vectors are comparable.</p>
+
+<!-- COSINE SIMILARITY -->
+<h2>Step 3: Finding Similar Chunks (Cosine Similarity)</h2>
+<pre>
+<span class="kw">def</span> <span class="fn">cosine_similarity</span>(a, b):
+    <span class="str">"""Compare vector a (the question) against matrix b (all chunks)."""</span>
+    a_norm = a / np.linalg.norm(a)                       <span class="cmt"># Normalize to length 1</span>
+    b_norm = b / np.linalg.norm(b, axis=<span class="num">1</span>, keepdims=True) <span class="cmt"># Normalize each row</span>
+    <span class="kw">return</span> b_norm @ a_norm                                <span class="cmt"># Matrix multiplication</span>
+</pre>
+<div class="callout callout-green">
+  <strong>💡 Step-by-step what happens:</strong><br>
+  1. <code>a</code> = question vector (1,536 numbers)<br>
+  2. <code>b</code> = matrix of ALL chunk vectors (e.g., 1,366 × 1,536)<br>
+  3. Normalize both so all vectors have length 1<br>
+  4. <code>b_norm @ a_norm</code> = matrix multiplication → gives 1,366 similarity scores<br>
+  5. Each score is between 0 (unrelated) and 1 (identical meaning)
+</div>
+
+<pre>
+<span class="kw">def</span> <span class="fn">retrieve_relevant_resources</span>(query, embeddings, top_k=<span class="num">3</span>):
+    query_emb = embed_query_openai(query)       <span class="cmt"># Step 2: embed the question</span>
+    scores = cosine_similarity(query_emb, embeddings) <span class="cmt"># Step 3: compare</span>
+
+    top_indices = np.argsort(scores)[::-<span class="num">1</span>][:top_k]  <span class="cmt"># Sort descending, take top 3</span>
+    top_scores = scores[top_indices]
+    <span class="kw">return</span> top_scores, top_indices
+</pre>
+<p><code>np.argsort()</code> returns the indices that would sort the array. <code>[::-1]</code> reverses it (highest first). <code>[:top_k]</code> takes the first 3.</p>
+
+<!-- PROMPT BUILDING -->
+<h2>Step 4: Building the Prompt</h2>
+<p>This is <strong>prompt engineering</strong> — writing careful instructions that tell ChatGPT exactly how to behave:</p>
+<pre>
+<span class="kw">def</span> <span class="fn">prompt_formatter</span>(query, context_items):
+    <span class="cmt"># Format each chunk with source info</span>
+    context_parts = []
+    <span class="kw">for</span> item <span class="kw">in</span> context_items:
+        context_parts.append(
+            f<span class="str">"[Source: {item['source_file']}, Page: {item['page_number']}]\n"</span>
+            f<span class="str">"{item['sentence_chunk']}"</span>
+        )
+    context = <span class="str">"\n\n"</span>.join(context_parts)
+
+    prompt = f<span class="str">"""You are a knowledgeable assistant...
+
+Based ONLY on the context passages below, answer the user's question
+in 2–4 sentences. Do NOT add information not in the context.
+When citing information, mention the source file name and page number.
+
+Context:
+{context}
+
+User question: {query}
+
+Answer:"""</span>
+    <span class="kw">return</span> prompt
+</pre>
+<div class="callout callout-yellow">
+  <strong>🎯 Key Prompt Design Choices:</strong><br>
+  • <strong>"Based ONLY on the context"</strong> — Prevents ChatGPT from using its training data (hallucination prevention).<br>
+  • <strong>"2–4 sentences"</strong> — Keeps answers concise and focused.<br>
+  • <strong>"mention the source file and page number"</strong> — Forces the AI to cite where the answer came from.<br>
+  • <strong>"If the answer is not in the context, say you cannot answer"</strong> — Honest fallback instead of guessing.
+</div>
+
+<!-- CALLING CHATGPT -->
+<h2>Step 5: Getting the Answer from ChatGPT</h2>
+<pre>
+@retry(...)  <span class="cmt"># Auto-retry on failures</span>
+<span class="kw">def</span> <span class="fn">_call_chat_api</span>(prompt):
+    client = get_openai_client()
+    response = client.chat.completions.create(
+        model=OPENAI_CHAT_MODEL,       <span class="cmt"># "gpt-4o-mini"</span>
+        messages=[
+            {<span class="str">"role"</span>: <span class="str">"system"</span>, <span class="str">"content"</span>: <span class="str">"You answer questions strictly based on document context."</span>},
+            {<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: prompt},
+        ],
+        temperature=<span class="num">0.3</span>,              <span class="cmt"># Low = more factual, less creative</span>
+        max_tokens=<span class="num">256</span>,               <span class="cmt"># Limit response length</span>
+    )
+    <span class="kw">return</span> response.choices[<span class="num">0</span>].message.content.strip()
+</pre>
+<div class="callout">
+  <strong>💡 What is <code>temperature</code>?</strong> A number from 0 to 2 that controls randomness. <code>0.0</code> = always picks the most likely word (robotic but factual). <code>1.0</code> = more creative. We use <code>0.3</code> because for RAG answers, we want accuracy over creativity.
+</div>
+<p>The <code>messages</code> list has two roles:</p>
+<ul>
+  <li><strong>system</strong> — Sets the AI's behavior ("You are a helpful assistant that…")</li>
+  <li><strong>user</strong> — The actual prompt with context + question</li>
+</ul>
+
+<!-- FULL RAG PIPELINE -->
+<h2>The Complete RAG Answer Flow — <code>answer_with_rag_cached()</code></h2>
+<p>This is the main function called by the chat page. It ties everything together:</p>
+<pre>
+<span class="kw">def</span> <span class="fn">answer_with_rag_cached</span>(user_query, pages_and_chunks, embeddings):
+    <span class="cmt"># 1. Input validation</span>
+    <span class="kw">if</span> len(user_query) > MAX_QUERY_LENGTH:
+        <span class="kw">return</span> <span class="str">"Your question is too long..."</span>
+
+    <span class="cmt"># 2. Find top-3 most relevant chunks</span>
+    scores, indices = retrieve_relevant_resources(user_query, embeddings, top_k=<span class="num">3</span>)
+
+    <span class="cmt"># 3. Sort by score (highest first)</span>
+    sorted_pairs = sorted(zip(scores, indices), reverse=True)
+    context_items = [pages_and_chunks[i] <span class="kw">for</span> _, i <span class="kw">in</span> sorted_pairs]
+
+    <span class="cmt"># 4. Build the prompt</span>
+    prompt = prompt_formatter(query=user_query, context_items=context_items)
+
+    <span class="cmt"># 5. Call ChatGPT and return the answer</span>
+    <span class="kw">return</span> _call_chat_api(prompt)
+</pre>
+
+<!-- QUIZ GENERATION -->
+<h2>Quiz Generation — <code>generate_quiz()</code></h2>
+<p>This function creates multiple-choice quizzes from the knowledge base. It works similarly to chat answers, but with a different prompt:</p>
+
+<h3>How it works:</h3>
+<ol>
+  <li><strong>Select context chunks</strong> — either from a specific PDF file, random sample, or all documents.</li>
+  <li><strong>Build a quiz prompt</strong> — instructs ChatGPT to generate MCQ questions in JSON format.</li>
+  <li><strong>Call ChatGPT</strong> — with <code>max_tokens=2048</code> (quizzes are longer than answers).</li>
+  <li><strong>Parse the JSON response</strong> — extract questions, options, correct answers, explanations.</li>
+  <li><strong>Validate</strong> — ensure each question has all required fields and the correct answer is one of the options.</li>
+</ol>
+
+<pre>
+<span class="cmt"># The quiz prompt instructs ChatGPT to return THIS format:</span>
+[
+  {
+    <span class="str">"question"</span>: <span class="str">"According to the document, what is ...?"</span>,
+    <span class="str">"options"</span>: {
+      <span class="str">"A"</span>: <span class="str">"Option from context"</span>,
+      <span class="str">"B"</span>: <span class="str">"Option from context"</span>,
+      <span class="str">"C"</span>: <span class="str">"Option from context"</span>,
+      <span class="str">"D"</span>: <span class="str">"Option from context"</span>
+    },
+    <span class="str">"correct"</span>: <span class="str">"B"</span>,
+    <span class="str">"explanation"</span>: <span class="str">"The text states that '...' (Source: file.pdf, Page: 5)"</span>
+  }
+]
+</pre>
+
+<div class="callout">
+  <strong>💡 Why JSON output?</strong> By asking ChatGPT to return structured JSON (not free-form text), we can programmatically parse it with <code>json.loads()</code> and render each question as an interactive radio-button form in Streamlit. The prompt includes <strong>strict rules</strong> that prevent the AI from using outside knowledge — every answer must come from the provided passages.
+</div>
+
+<h3>Quiz validation code:</h3>
+<pre>
+<span class="cmt"># After parsing JSON, validate each question</span>
+validated = []
+<span class="kw">for</span> q <span class="kw">in</span> questions:
+    <span class="kw">if</span> all(k <span class="kw">in</span> q <span class="kw">for</span> k <span class="kw">in</span> (<span class="str">"question"</span>, <span class="str">"options"</span>, <span class="str">"correct"</span>, <span class="str">"explanation"</span>)):
+        <span class="kw">if</span> q[<span class="str">"correct"</span>] <span class="kw">in</span> q[<span class="str">"options"</span>]:  <span class="cmt"># Correct answer must be A/B/C/D</span>
+            validated.append(q)
+</pre>
+
+<div class="nav-bottom">
+  <a href="pipeline.html" class="btn btn-outline">← Pipeline</a>
+  <a href="frontend.html" class="btn">Next: Streamlit Frontend →</a>
+</div>
+
+</div>
+</body>
+</html>

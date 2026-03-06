@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Project Overview — RAG Docs</title>
+<style>
+  :root{--primary:#4285F4;--bg:#f8f9fa;--card:#fff;--text:#212529;--muted:#6c757d;--code-bg:#1e1e1e;--code-fg:#d4d4d4;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;}
+  .topbar{background:var(--primary);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  .topbar a{color:#fff;text-decoration:none;font-weight:600;} .topbar .nav a{margin-left:18px;opacity:.85;font-size:.9rem;} .topbar .nav a:hover{opacity:1;}
+  .container{max-width:860px;margin:0 auto;padding:40px 20px 60px;}
+  h1{font-size:2rem;margin-bottom:8px;} h2{font-size:1.45rem;margin:36px 0 10px;padding-bottom:6px;border-bottom:2px solid #e9ecef;} h3{font-size:1.15rem;margin:24px 0 8px;}
+  p,li{margin-bottom:10px;} ul,ol{padding-left:24px;}
+  .callout{background:#e8f0fe;border-left:4px solid var(--primary);padding:16px 20px;border-radius:0 8px 8px 0;margin:20px 0;}
+  .callout-green{background:#e6f4ea;border-left-color:#34a853;} .callout-yellow{background:#fef7e0;border-left-color:#fbbc04;}
+  code{background:#e9ecef;padding:2px 6px;border-radius:4px;font-size:.88em;}
+  pre{background:var(--code-bg);color:var(--code-fg);padding:18px;border-radius:8px;overflow-x:auto;font-size:.85rem;line-height:1.5;margin:14px 0;}
+  table{width:100%;border-collapse:collapse;margin:14px 0;} th,td{border:1px solid #dee2e6;padding:10px 14px;text-align:left;font-size:.92rem;} th{background:#e9ecef;}
+  .flow{background:var(--card);border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin:20px 0;}
+  .nav-bottom{display:flex;justify-content:space-between;margin-top:50px;padding-top:20px;border-top:2px solid #e9ecef;}
+  .btn{display:inline-block;background:var(--primary);color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem;} .btn:hover{background:#3367d6;}
+  .btn-outline{background:transparent;color:var(--primary);border:2px solid var(--primary);} .btn-outline:hover{background:var(--primary);color:#fff;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="index.html">📚 RAG Docs</a>
+  <div class="nav"><a href="index.html">Home</a><a href="setup.html">Setup</a><a href="config.html">Config</a><a href="pipeline.html">Pipeline</a><a href="retrieval.html">Retrieval</a><a href="frontend.html">Frontend</a><a href="deployment.html">Deploy</a><a href="libraries.html">Libraries</a></div>
+</div>
+<div class="container">
+
+<h1>🧠 1. Project Overview</h1>
+<p>This page explains the core concepts behind this project — in plain English, for someone who has never worked with AI before.</p>
+
+<h2>What Problem Does This Solve?</h2>
+<p>ChatGPT is powerful, but it can only answer from its <strong>training data</strong> (which is frozen at a point in time). It doesn't know about:</p>
+<ul>
+  <li>Your private company documents</li>
+  <li>A textbook you just downloaded</li>
+  <li>Any PDF on your laptop</li>
+</ul>
+<p><strong>RAG solves this</strong> by feeding the AI <em>your</em> documents as context, so it answers based on <em>your</em> data — not its general knowledge.</p>
+
+<h2>What is RAG?</h2>
+<p><strong>Retrieval-Augmented Generation</strong> is a two-step process:</p>
+<ol>
+  <li><strong>Retrieve</strong> — Search your documents for the most relevant passages to the user's question.</li>
+  <li><strong>Generate</strong> — Give those passages to ChatGPT as context, and ask it to answer based <em>only</em> on that context.</p>
+</ol>
+<div class="callout">
+  <strong>💡 Analogy:</strong> Imagine an open-book exam. The student (ChatGPT) isn't answering from memory — they're looking up the answer in the provided textbook (your PDF). RAG is the "open book" part.
+</div>
+
+<h2>What Are Embeddings?</h2>
+<p>An <strong>embedding</strong> is a list of numbers (a vector) that represents the <em>meaning</em> of text. OpenAI's <code>text-embedding-3-small</code> model converts any text into exactly <strong>1,536 numbers</strong>.</p>
+<ul>
+  <li>"The weather is sunny today" → <code>[0.012, -0.034, 0.078, ...]</code> (1,536 numbers)</li>
+  <li>"It's a bright and warm day" → <code>[0.011, -0.031, 0.076, ...]</code> (very similar numbers!)</li>
+  <li>"Python programming tutorial" → <code>[-0.045, 0.092, -0.018, ...]</code> (very different numbers)</li>
+</ul>
+<p>Texts with <strong>similar meanings</strong> get <strong>similar vectors</strong>, even if they use completely different words. This is the magic that powers semantic search.</p>
+
+<h2>What is Cosine Similarity?</h2>
+<p>Once we have vectors for both the user's question and all the document chunks, we need to measure how <em>similar</em> they are. <strong>Cosine similarity</strong> does this:</p>
+<table>
+  <tr><th>Score</th><th>Meaning</th></tr>
+  <tr><td><code>1.0</code></td><td>Identical meaning (same direction in vector space)</td></tr>
+  <tr><td><code>0.7–0.9</code></td><td>Very similar — a good match</td></tr>
+  <tr><td><code>0.3–0.6</code></td><td>Somewhat related</td></tr>
+  <tr><td><code>0.0</code></td><td>Completely unrelated (perpendicular)</td></tr>
+</table>
+<p>We compute cosine similarity between the question vector and <em>every</em> chunk vector, then pick the <strong>top 3</strong> highest-scoring chunks.</p>
+
+<h2>End-to-End Data Flow</h2>
+<div class="flow">
+<pre>
+┌──────────────────────────────────────────────────────────┐
+│                  ONE-TIME PROCESSING                      │
+│                                                           │
+│  PDF files  ──→  Extract text  ──→  Split into sentences  │
+│              (PyMuPDF/fitz)        (regex)                │
+│                                                           │
+│  Sentences  ──→  Group into chunks  ──→  Create embeddings│
+│              (10 sentences each)       (OpenAI API)       │
+│                                                           │
+│  Save to disk:  chunks.csv + embeddings.pkl               │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│                  EVERY USER QUESTION                      │
+│                                                           │
+│  User question  ──→  Embed question  ──→  Cosine similarity│
+│                     (OpenAI API)        vs all chunks     │
+│                                                           │
+│  Top 3 chunks  ──→  Build prompt  ──→  Send to ChatGPT   │
+│                    (context + rules)  (gpt-4o-mini)       │
+│                                                           │
+│  ChatGPT answer  ──→  Display in Streamlit chat UI        │
+└──────────────────────────────────────────────────────────┘
+</pre>
+</div>
+
+<h2>How the Files Map to the Flow</h2>
+<table>
+  <tr><th>Step</th><th>File</th><th>Key Function</th></tr>
+  <tr><td>Upload PDFs</td><td><code>pages/mainPage.py</code></td><td><code>st.file_uploader()</code></td></tr>
+  <tr><td>Extract text from PDF</td><td><code>embedandchunk.py</code></td><td><code>_iter_pdf_pages()</code></td></tr>
+  <tr><td>Split into sentences</td><td><code>embedandchunk.py</code></td><td><code>_split_sentences()</code></td></tr>
+  <tr><td>Group into chunks</td><td><code>embedandchunk.py</code></td><td><code>_chunks_from_page()</code></td></tr>
+  <tr><td>Create embeddings</td><td><code>embedandchunk.py</code></td><td><code>_embed_and_save_streaming()</code></td></tr>
+  <tr><td>User asks a question</td><td><code>pages/chatPage.py</code></td><td><code>st.chat_input()</code></td></tr>
+  <tr><td>Embed the question</td><td><code>AnswerAll.py</code></td><td><code>embed_query_openai()</code></td></tr>
+  <tr><td>Find similar chunks</td><td><code>AnswerAll.py</code></td><td><code>cosine_similarity()</code></td></tr>
+  <tr><td>Build prompt</td><td><code>AnswerAll.py</code></td><td><code>prompt_formatter()</code></td></tr>
+  <tr><td>Get ChatGPT answer</td><td><code>AnswerAll.py</code></td><td><code>_call_chat_api()</code></td></tr>
+  <tr><td>Show answer</td><td><code>pages/chatPage.py</code></td><td><code>st.chat_message()</code></td></tr>
+</table>
+
+<h2>Why Not Just Paste the Whole PDF into ChatGPT?</h2>
+<div class="callout callout-yellow">
+  <strong>Three reasons:</strong>
+  <ol>
+    <li><strong>Token limit</strong> — ChatGPT can only accept ~128,000 tokens per request. A 500-page PDF can have 500,000+ tokens. It literally won't fit.</li>
+    <li><strong>Cost</strong> — You pay per token. Sending the whole PDF every time would cost $0.50–$5.00 per question. Sending only 3 relevant chunks costs $0.001.</li>
+    <li><strong>Quality</strong> — Too much context confuses the AI. Sending only the most relevant paragraphs produces better, more focused answers.</li>
+  </ol>
+</div>
+
+<h2>Features of This App</h2>
+<ul>
+  <li>✅ <strong>Multi-PDF support</strong> — Upload and process multiple PDFs at once</li>
+  <li>✅ <strong>Chat interface</strong> — Ask questions in a ChatGPT-like UI with conversation history</li>
+  <li>✅ <strong>Auto-generated quizzes</strong> — MCQ quizzes from your documents with difficulty levels</li>
+  <li>✅ <strong>Source citations</strong> — Every answer includes the source file and page number</li>
+  <li>✅ <strong>Google OAuth login</strong> — Secure authentication</li>
+  <li>✅ <strong>Render deployment</strong> — Accessible via a public URL, no local installation needed</li>
+  <li>✅ <strong>Memory-optimized</strong> — Runs on Render's 512 MB free tier</li>
+</ul>
+
+<div class="nav-bottom">
+  <a href="index.html" class="btn btn-outline">← Home</a>
+  <a href="setup.html" class="btn">Next: Setup &amp; Installation →</a>
+</div>
+
+</div>
+</body>
+</html>

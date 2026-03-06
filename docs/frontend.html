@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Streamlit Frontend — RAG Docs</title>
+<style>
+  :root{--primary:#4285F4;--bg:#f8f9fa;--card:#fff;--text:#212529;--muted:#6c757d;--code-bg:#1e1e1e;--code-fg:#d4d4d4;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;}
+  .topbar{background:var(--primary);color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  .topbar a{color:#fff;text-decoration:none;font-weight:600;} .topbar .nav a{margin-left:18px;opacity:.85;font-size:.9rem;} .topbar .nav a:hover{opacity:1;}
+  .container{max-width:860px;margin:0 auto;padding:40px 20px 60px;}
+  h1{font-size:2rem;margin-bottom:8px;} h2{font-size:1.45rem;margin:36px 0 10px;padding-bottom:6px;border-bottom:2px solid #e9ecef;} h3{font-size:1.15rem;margin:24px 0 8px;}
+  p,li{margin-bottom:10px;} ul,ol{padding-left:24px;}
+  .callout{background:#e8f0fe;border-left:4px solid var(--primary);padding:16px 20px;border-radius:0 8px 8px 0;margin:20px 0;}
+  .callout-green{background:#e6f4ea;border-left-color:#34a853;} .callout-yellow{background:#fef7e0;border-left-color:#fbbc04;} .callout-red{background:#fce8e6;border-left-color:#ea4335;}
+  code{background:#e9ecef;padding:2px 6px;border-radius:4px;font-size:.88em;}
+  pre{background:var(--code-bg);color:var(--code-fg);padding:18px;border-radius:8px;overflow-x:auto;font-size:.85rem;line-height:1.5;margin:14px 0;}
+  .kw{color:#569cd6;} .str{color:#ce9178;} .cmt{color:#6a9955;} .fn{color:#dcdcaa;} .num{color:#b5cea8;}
+  table{width:100%;border-collapse:collapse;margin:14px 0;} th,td{border:1px solid #dee2e6;padding:10px 14px;text-align:left;font-size:.92rem;} th{background:#e9ecef;}
+  .page-card{background:var(--card);border-radius:12px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,.08);margin:20px 0;border-left:5px solid var(--primary);}
+  .nav-bottom{display:flex;justify-content:space-between;margin-top:50px;padding-top:20px;border-top:2px solid #e9ecef;}
+  .btn{display:inline-block;background:var(--primary);color:#fff;padding:10px 22px;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem;} .btn:hover{background:#3367d6;}
+  .btn-outline{background:transparent;color:var(--primary);border:2px solid var(--primary);} .btn-outline:hover{background:var(--primary);color:#fff;}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a href="index.html">📚 RAG Docs</a>
+  <div class="nav"><a href="index.html">Home</a><a href="overview.html">Overview</a><a href="setup.html">Setup</a><a href="config.html">Config</a><a href="pipeline.html">Pipeline</a><a href="retrieval.html">Retrieval</a><a href="deployment.html">Deploy</a><a href="libraries.html">Libraries</a></div>
+</div>
+<div class="container">
+
+<h1>🖥️ 6. Streamlit Frontend</h1>
+<p>The app has <strong>four pages</strong> built with Streamlit. This section explains how each page works — every widget, callback, and session state variable.</p>
+
+<div class="callout">
+  <strong>💡 What is Streamlit?</strong> A Python framework that turns scripts into web apps. You write normal Python code with calls like <code>st.title("Hello")</code> or <code>st.button("Click me")</code>, and Streamlit renders them as HTML elements in your browser. No HTML/CSS/JS needed. Every time a user interacts with a widget, Streamlit <strong>re-runs the entire script from top to bottom</strong>.
+</div>
+
+<h2>How Streamlit Multi-Page Apps Work</h2>
+<ul>
+  <li>The <strong>entry point</strong> is <code>app.py</code> (run with <code>streamlit run app.py</code>).</li>
+  <li>Any <code>.py</code> file inside a <code>pages/</code> folder automatically becomes a sidebar page.</li>
+  <li><code>st.set_page_config()</code> is called <strong>only once</strong> in <code>app.py</code> — never in the page files.</li>
+  <li><code>st.session_state</code> is a dictionary that persists across re-runs within a single browser session. It's how pages share data.</li>
+</ul>
+
+<!-- ==================== APP.PY ==================== -->
+<div class="page-card">
+<h2>🔐 Page 1: Login — <code>app.py</code></h2>
+<p>This is the first thing users see. It handles Google OAuth authentication.</p>
+
+<h3>What happens step by step:</h3>
+<ol>
+  <li>User sees a <strong>"Login with Google"</strong> button (rendered as an HTML link).</li>
+  <li>Clicking it redirects to Google's login page via <code>build_auth_url()</code>.</li>
+  <li>After the user signs in, Google redirects back to the app with a <code>?code=...</code> query parameter.</li>
+  <li><code>exchange_code_for_tokens()</code> sends that code to Google and gets back an ID token.</li>
+  <li>The ID token is verified with <code>id_token.verify_oauth2_token()</code>.</li>
+  <li>The user's email is stored in <code>st.session_state.user_email</code>.</li>
+</ol>
+
+<pre>
+<span class="cmt"># Build the Google login URL</span>
+<span class="kw">def</span> <span class="fn">build_auth_url</span>():
+    params = {
+        <span class="str">"client_id"</span>: CLIENT_ID,
+        <span class="str">"redirect_uri"</span>: REDIRECT_URI,   <span class="cmt"># http://localhost:8501/</span>
+        <span class="str">"response_type"</span>: <span class="str">"code"</span>,
+        <span class="str">"scope"</span>: <span class="str">"openid email profile"</span>,
+    }
+    <span class="kw">return</span> f<span class="str">"{AUTH_URI}?{urllib.parse.urlencode(params)}"</span>
+</pre>
+
+<h3>Key Session State Variables:</h3>
+<table>
+  <tr><th>Variable</th><th>Type</th><th>Purpose</th></tr>
+  <tr><td><code>user_logged_in</code></td><td>bool</td><td>Is the user authenticated?</td></tr>
+  <tr><td><code>user_email</code></td><td>str</td><td>The logged-in user's email address</td></tr>
+</table>
+
+<div class="callout callout-yellow">
+  <strong>🔒 Auth Guard:</strong> Every other page starts with this check:
+  <pre style="margin:8px 0 0;">
+<span class="kw">if</span> <span class="str">"user_logged_in"</span> <span class="kw">not in</span> st.session_state <span class="kw">or not</span> st.session_state.user_logged_in:
+    st.error(<span class="str">"You are not logged in."</span>)
+    st.stop()  <span class="cmt"># Stops rendering — nothing below runs</span></pre>
+</div>
+</div>
+
+<!-- ==================== MAINPAGE ==================== -->
+<div class="page-card" style="border-left-color:#34a853;">
+<h2>📂 Page 2: Upload &amp; Process — <code>pages/mainPage.py</code></h2>
+<p>This page lets users upload PDFs and processes them into a knowledge base.</p>
+
+<h3>Widgets used:</h3>
+<table>
+  <tr><th>Widget</th><th>Code</th><th>What It Does</th></tr>
+  <tr><td>File uploader</td><td><code>st.file_uploader(..., type=["pdf"], accept_multiple_files=True)</code></td><td>Lets user select one or more PDF files</td></tr>
+  <tr><td>Checkbox</td><td><code>st.checkbox("Force re-process")</code></td><td>Deletes previous outputs before re-processing</td></tr>
+  <tr><td>Button</td><td><code>st.button("🚀 Process All PDFs")</code></td><td>Starts the background processing thread</td></tr>
+</table>
+
+<h3>Background Processing (the clever part):</h3>
+<p>PDF processing takes 30–120 seconds. If we did it in the main Streamlit thread, the UI would freeze. Instead, we use a <strong>background thread</strong>:</p>
+
+<pre>
+<span class="cmt"># 1. Save uploaded files to disk</span>
+<span class="kw">for</span> uf <span class="kw">in</span> uploaded_files:
+    <span class="kw">with</span> open(os.path.join(UPLOAD_DIR, uf.name), <span class="str">"wb"</span>) <span class="kw">as</span> f:
+        f.write(uf.getbuffer())
+
+<span class="cmt"># 2. Start processing in a background thread</span>
+thread = threading.Thread(
+    target=_run_processing_in_background,
+    args=(UPLOAD_DIR, pages_csv, chunks_csv, embeddings_pkl),
+    daemon=True,
+)
+thread.start()
+
+<span class="cmt"># 3. Page auto-refreshes every 3 seconds to check status</span>
+time.sleep(<span class="num">3</span>)
+st.rerun()
+</pre>
+
+<div class="callout callout-red">
+  <strong>⚠️ Why file-based signaling?</strong> Background threads in Streamlit <strong>cannot</strong> safely write to <code>st.session_state</code> (it causes <code>ScriptRunContext</code> errors). So the thread writes status to a JSON file on disk (<code>_processing_status.json</code>), and the main thread reads it every 3 seconds:
+  <pre style="margin:8px 0 0;">
+<span class="cmt"># Thread writes:</span>  {<span class="str">"status"</span>: <span class="str">"done"</span>, <span class="str">"processed_files"</span>: [<span class="str">"book.pdf"</span>]}
+<span class="cmt"># Main thread reads and updates session_state</span></pre>
+</div>
+
+<h3>Session State Variables Set:</h3>
+<table>
+  <tr><th>Variable</th><th>Purpose</th></tr>
+  <tr><td><code>bg_processing</code></td><td>True while the thread is running</td></tr>
+  <tr><td><code>processing_done</code></td><td>True after successful processing</td></tr>
+  <tr><td><code>active_chunks_csv</code></td><td>Path to the generated chunks CSV</td></tr>
+  <tr><td><code>active_embeddings_path</code></td><td>Path to the generated embeddings .pkl</td></tr>
+  <tr><td><code>processed_files</code></td><td>List of PDF filenames that were processed</td></tr>
+</table>
+</div>
+
+<!-- ==================== CHATPAGE ==================== -->
+<div class="page-card" style="border-left-color:#ea4335;">
+<h2>💬 Page 3: Chat — <code>pages/chatPage.py</code></h2>
+<p>This page provides a ChatGPT-like interface for asking questions about uploaded PDFs.</p>
+
+<h3>How it works:</h3>
+<pre>
+<span class="cmt"># 1. Load knowledge base (cached — only loaded once)</span>
+@st.cache_resource
+<span class="kw">def</span> <span class="fn">get_rag_resources</span>(_chunks_csv, _embeddings_path):
+    <span class="kw">return</span> load_rag_resources(chunks_csv=_chunks_csv, embeddings_path=_embeddings_path)
+
+pages_and_chunks, embeddings = get_rag_resources(chunks_csv, embeddings_path)
+
+<span class="cmt"># 2. Display chat history (previous messages)</span>
+<span class="kw">for</span> msg <span class="kw">in</span> st.session_state.chat_history:
+    <span class="kw">with</span> st.chat_message(msg[<span class="str">"role"</span>]):
+        st.markdown(msg[<span class="str">"content"</span>])
+
+<span class="cmt"># 3. Native chat input bar (pinned to bottom)</span>
+user_input = st.chat_input(<span class="str">"Ask a question about the document…"</span>)
+
+<span class="cmt"># 4. On submit: get RAG answer and display it</span>
+<span class="kw">if</span> user_input:
+    answer = answer_with_rag_cached(user_input, pages_and_chunks, embeddings)
+    st.session_state.chat_history.append({<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"content"</span>: answer})
+</pre>
+
+<div class="callout callout-green">
+  <strong>💡 What is <code>@st.cache_resource</code>?</strong> A Streamlit decorator that caches the return value of a function. The first time it's called, it runs normally and stores the result. On every subsequent re-run (every user interaction!), it returns the cached result instantly. This means the chunks CSV and embeddings are loaded from disk <strong>only once</strong>, not on every keystroke.
+</div>
+
+<h3>Streamlit Chat Widgets:</h3>
+<table>
+  <tr><th>Widget</th><th>What It Does</th></tr>
+  <tr><td><code>st.chat_input()</code></td><td>Renders a text input bar pinned to the bottom of the page</td></tr>
+  <tr><td><code>st.chat_message("user")</code></td><td>Renders a chat bubble with a person icon</td></tr>
+  <tr><td><code>st.chat_message("assistant")</code></td><td>Renders a chat bubble with a bot icon</td></tr>
+  <tr><td><code>st.spinner("Thinking…")</code></td><td>Shows a loading animation while waiting for the API</td></tr>
+</table>
+
+<p>The sidebar shows which knowledge base is active and has a <strong>"Clear chat"</strong> button that resets <code>chat_history</code>.</p>
+</div>
+
+<!-- ==================== QUIZPAGE ==================== -->
+<div class="page-card" style="border-left-color:#fbbc04;">
+<h2>🧠 Page 4: Quiz — <code>pages/quizPage.py</code></h2>
+<p>This page auto-generates multiple-choice quizzes from the uploaded PDFs.</p>
+
+<h3>Quiz Configuration Widgets:</h3>
+<table>
+  <tr><th>Widget</th><th>Options</th><th>Purpose</th></tr>
+  <tr><td><code>st.selectbox("Quiz Source")</code></td><td>All documents, specific file, or random passages</td><td>Choose where questions come from</td></tr>
+  <tr><td><code>st.selectbox("Difficulty")</code></td><td>Easy, Medium, Hard</td><td>Controls question complexity</td></tr>
+  <tr><td><code>st.selectbox("Questions")</code></td><td>3, 5, 7, 10</td><td>How many questions to generate</td></tr>
+</table>
+
+<h3>Quiz Lifecycle:</h3>
+<ol>
+  <li><strong>Generate:</strong> User clicks "Generate Quiz" → chunks are sampled → sent to ChatGPT → MCQ JSON returned → stored in <code>st.session_state.quiz_questions</code>.</li>
+  <li><strong>Take:</strong> Questions rendered inside <code>st.form()</code> with <code>st.radio()</code> for each. User selects answers and clicks "Submit".</li>
+  <li><strong>Results:</strong> Score calculated, shown with progress bar. Each question reviewed with ✅/❌, correct answers highlighted in green, wrong in red, and explanations in expandable sections.</li>
+</ol>
+
+<pre>
+<span class="cmt"># Rendering one quiz question</span>
+<span class="kw">with</span> st.form(<span class="str">"quiz_form"</span>):
+    <span class="kw">for</span> i, q <span class="kw">in</span> enumerate(questions):
+        st.markdown(f<span class="str">"**Q{i+1}.** {q['question']}"</span>)
+        choices = [f<span class="str">"{key}: {val}"</span> <span class="kw">for</span> key, val <span class="kw">in</span> q[<span class="str">"options"</span>].items()]
+        st.radio(f<span class="str">"Answer Q{i+1}:"</span>, options=choices, key=f<span class="str">"q_{i}"</span>)
+    st.form_submit_button(<span class="str">"✅ Submit Answers"</span>)
+</pre>
+
+<div class="callout">
+  <strong>💡 Why <code>st.form()</code>?</strong> Normally, Streamlit re-runs the script every time any widget changes. With a form, changes are batched — the script only re-runs when the submit button is clicked. This prevents the quiz from resetting every time the user selects a radio button.
+</div>
+
+<h3>Quiz Session State:</h3>
+<table>
+  <tr><th>Variable</th><th>Type</th><th>Purpose</th></tr>
+  <tr><td><code>quiz_questions</code></td><td>list[dict]</td><td>The generated quiz questions</td></tr>
+  <tr><td><code>quiz_submitted</code></td><td>bool</td><td>Has the user submitted answers?</td></tr>
+  <tr><td><code>quiz_answers</code></td><td>dict</td><td>User's selected answers (index → letter)</td></tr>
+  <tr><td><code>quiz_score</code></td><td>int</td><td>Number of correct answers</td></tr>
+</table>
+</div>
+
+<div class="nav-bottom">
+  <a href="retrieval.html" class="btn btn-outline">← Retrieval</a>
+  <a href="deployment.html" class="btn">Next: Deployment →</a>
+</div>
+
+</div>
+</body>
+</html>
