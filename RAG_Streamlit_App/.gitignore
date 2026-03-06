@@ -14,6 +14,7 @@ build/
 data/*.pdf
 data/machine-learning-books-master/
 data/uploaded_pdfs/
+data/_processing_status.json
 
 # OS
 .DS_Store
